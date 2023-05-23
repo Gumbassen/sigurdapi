@@ -4,32 +4,45 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 
-const transports = {
-    console: new winston.transports.Console({
-        format: winston.format.simple(),
-        level:  'silly',
-    }),
-    errorFile: new winston.transports.File({
-        filename: 'logs/error.log',
-        level:    'error',
-        format:   winston.format.json(),
-    }),
-    debugFile: new winston.transports.File({
-        filename: 'logs/debug.log',
-        level:    'info',
-        format:   winston.format.json(),
-    }),
-}
+const jsonFormatting = winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json(),
+)
 
 const logger: Logger = winston.createLogger({
     level:      'silly',
-    transports: [ transports.errorFile, transports.debugFile ],
+    transports: [
+        new winston.transports.File({
+            filename: 'logs/error.log',
+            level:    'error',
+            format:   jsonFormatting,
+        }),
+        new winston.transports.File({
+            filename: 'logs/debug.log',
+            level:    'info',
+            format:   jsonFormatting,
+        }),
+    ],
+    exceptionHandlers: [
+        new winston.transports.File({
+            filename:         'logs/exceptions.log',
+            level:            'silly',
+            format:           jsonFormatting,
+            handleExceptions: true,
+        }),
+    ],
 })
 
 if(process.env.NODE_ENV !== 'production')
 {
     // Only write to console if not in production
-    logger.add(transports.console)
+    logger.add(new winston.transports.Console({
+        format: winston.format.combine(
+            winston.format.colorize(),
+            winston.format.simple(),
+        ),
+        level: 'silly',
+    }))
 }
 
 
