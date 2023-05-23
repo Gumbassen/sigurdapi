@@ -5,6 +5,7 @@
         "es2021": true,
         "node": true
     },
+    "root": true,
     "extends": [
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended"
@@ -30,11 +31,11 @@
         "no-self-assign": "error",
         "no-self-compare": "error",
         "no-template-curly-in-string": "error",
-        "no-undef": "error",
+        // "no-undef": "error",
         "no-unexpected-multiline": "error",
         "no-unmodified-loop-condition": "error",
         "no-unreachable": "warn",
-        "no-unused-vars": "warn",
+        // "no-unused-vars": "warn",
         "no-use-before-define": "error",
         "use-isnan": "error",
         "valid-typeof": "error",

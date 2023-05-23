@@ -9,23 +9,23 @@ const jsonFormatting = winston.format.combine(
     winston.format.json(),
 )
 
-const logger: Logger = winston.createLogger({
+const log: Logger = winston.createLogger({
     level:      'silly',
     transports: [
         new winston.transports.File({
-            filename: 'logs/error.log',
+            filename: `${process.cwd()}/logs/error.log`,
             level:    'error',
             format:   jsonFormatting,
         }),
         new winston.transports.File({
-            filename: 'logs/debug.log',
+            filename: `${process.cwd()}/logs/debug.log`,
             level:    'info',
             format:   jsonFormatting,
         }),
     ],
     exceptionHandlers: [
         new winston.transports.File({
-            filename:         'logs/exceptions.log',
+            filename:         `${process.cwd()}/logs/exceptions.log`,
             level:            'silly',
             format:           jsonFormatting,
             handleExceptions: true,
@@ -36,7 +36,7 @@ const logger: Logger = winston.createLogger({
 if(process.env.NODE_ENV !== 'production')
 {
     // Only write to console if not in production
-    logger.add(new winston.transports.Console({
+    log.add(new winston.transports.Console({
         format: winston.format.combine(
             winston.format.colorize(),
             winston.format.simple(),
@@ -46,6 +46,6 @@ if(process.env.NODE_ENV !== 'production')
 }
 
 
-logger.info(`⚡ Running in "${process.env.NODE_ENV}" mode`)
+log.info(`⚡ Running in "${process.env.NODE_ENV}" mode`)
 
-export default logger
+export default log

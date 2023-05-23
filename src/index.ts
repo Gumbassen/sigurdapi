@@ -1,24 +1,55 @@
 
 
 // Environment setup
-import express, { Express, Request, Response } from 'express'
+import express from 'express'
+import log from './utils/logger'
 import dotenv from 'dotenv'
+import fsrecursivesearch from './utils/fsrecursivesearch'
 dotenv.config()
 
-import logger from './logger'
-
-const app: Express = express()
-const port         = process.env.PORT
-
+// Changes the working directory to the where index.ts/js is.
+// Otherwise any FS stuff thinks the root directory is the working directory (should be ./dist).
+process.chdir(__dirname)
 
 
-app.get('/', (req: Request, res: Response) =>
+const app  = express()
+const port = Number.parseInt(process.env.PORT ?? '6969')
+
+
+app.get('/', (req, res) =>
 {
-    logger.http('Hello world was visited.')
+    // This shit is just for debugging
+    // Dont mind
+    log.http('Hello world was visited.')
     res.send('Hello World!')
 })
 
+
+
+// Autoload routes from the routes folder
+for(const path of fsrecursivesearch('./routes', ({ name }) => name === 'endpoint.js'))
+{
+    const prefixRx       = /^\.\/routes((?:\/\w+)+)\/endpoint.js$/g
+    const prefixRxResult = prefixRx.exec(path)
+    if(prefixRxResult === null) continue
+    const prefix = prefixRxResult[1]
+
+    log.info(`Autoloading route: "${prefix}" from "${path}"`)
+
+    import(path)
+        .then(({ router }) =>
+        {
+            app.use(prefix, router)
+        }).catch(error =>
+        {
+            log.error(`Failed to import route endpoint file "${path}": "${error}"`)
+        })
+}
+
+
+
+// Start the server
 app.listen(port, () =>
 {
-    logger.info(`⚡ [SERVER] Listening on port ${port}`)
+    log.info(`⚡ [SERVER] Listening on port ${port}`)
 })
