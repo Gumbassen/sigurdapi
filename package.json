@@ -15,9 +15,11 @@
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "express-jwt": "^8.4.1",
+    "js-sha256": "^0.9.0",
     "jsonwebtoken": "^9.0.0",
     "protobufjs": "^7.2.3",
     "protobufjs-cli": "^1.1.1",
+    "sha256": "^0.2.0",
     "swagger-ui-dist": "^4.18.3",
     "winston": "^3.8.2"
   },

@@ -68,7 +68,9 @@
         "comma-spacing": "error",
         "dot-location": ["error", "property"],
         "eol-last": ["error", "always"],
-        "indent": ["error", 4],
+        "indent": ["error", 4, {
+            "SwitchCase": 1
+        }],
         "key-spacing": ["error", {
             "beforeColon": false,
             "afterColon": true,

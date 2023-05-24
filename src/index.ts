@@ -6,6 +6,7 @@ import log from './utils/logger'
 import dotenv from 'dotenv'
 import swagger from 'swagger-ui-dist'
 import fsrecursivesearch from './utils/fsrecursivesearch'
+import authmw from './middlewares/auth'
 dotenv.config()
 
 // Changes the working directory to the where index.ts/js is.
@@ -15,6 +16,14 @@ process.chdir(__dirname)
 
 const app  = express()
 const port = Number.parseInt(process.env.PORT ?? '6969')
+
+
+
+
+app.use(express.json())
+app.use(authmw({}))
+
+
 
 
 app.get('/', (req, res) =>
@@ -27,6 +36,7 @@ app.get('/', (req, res) =>
 
 
 app.use('/swagger', express.static(swagger.absolutePath()))
+app.use('/static', express.static('./../static'))
 
 
 // Autoload routes from the routes folder
@@ -37,12 +47,12 @@ for(const path of fsrecursivesearch('./routes', ({ name }) => name === 'endpoint
     if(prefixRxResult === null) continue
     const prefix = prefixRxResult[1]
 
-    log.info(`Autoloading route: "${prefix}" from "${path}"`)
+    log.verbose(`Autoloading route: "${prefix}" from "${path}"`)
 
     import(path)
-        .then(({ router }) =>
+        .then(module =>
         {
-            app.use(prefix, router)
+            app.use(prefix, module.default)
         }).catch(error =>
         {
             log.error(`Failed to import route endpoint file "${path}": "${error}"`)
