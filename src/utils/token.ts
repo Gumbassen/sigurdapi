@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
+import { Request } from 'express'
 import { createHmac, randomUUID } from 'crypto'
 import log from './logger'
 
@@ -9,7 +10,7 @@ if(typeof process.env.JWT_SECRET !== 'string')
 const        SECRET         = process.env.JWT_SECRET
 export const ALLOW_ALG_NONE = process.env.JWT_ALLOW_ALG_NONE === '1'
 
-log.silly(`Spilled te beans! JWT Secret: ${SECRET}`)
+log.silly(`Spilled the beans! JWT Secret: ${SECRET}`)
 
 
 // Custom errors
@@ -18,6 +19,23 @@ export class TokenInvalidError extends Error
     constructor(message?: string)
     {
         log.info(`Invalid token! ${message}`)
+        super(message)
+    }
+}
+
+export class TokenMissingError extends Error
+{
+    constructor(message?: string)
+    {
+        log.info('Token is missing!')
+        super(message)
+    }
+}
+
+export class TokenExpiredError extends Error
+{
+    constructor(message?: string)
+    {
         super(message)
     }
 }
@@ -64,15 +82,12 @@ export interface TokenPayload
 // The actual token class
 export default class Token
 {
-    public static fromAuthHeader(value?: string): Token
+    public static fromAuthHeader(value: string): Token
     {
-        if(typeof value !== 'string')
-            throw new TokenInvalidError('Token value is null')
+        if(value.startsWith('Bearer '))
+            value = value.substring(7)
 
-        if(value!.startsWith('Bearer '))
-            value = value!.substring(7)
-
-        const parts = value!.split('.')
+        const parts = value.split('.')
 
         if(parts.length !== 3)
             throw new TokenInvalidError(`parts.length=${parts.length} (should be 3)`)
@@ -82,6 +97,15 @@ export default class Token
         token.payload   = this.parsePayload(parts[1])
         token.signature = parts[2]
         return token
+    }
+
+    public static fromRequest(request: Request): Token
+    {
+        const value = request.header('Authorization')
+        if(typeof value !== 'string')
+            throw new TokenMissingError()
+
+        return this.fromAuthHeader(value)
     }
 
     public static fromPayload(payload: TokenPayload, ttl?: number): Token
@@ -212,6 +236,11 @@ export default class Token
     {
         this.payload[field] = value
         this.unsign()
+    }
+
+    public toTokenString(): string
+    {
+        return `${this.getEncodedHeader()}.${this.getEncodedPayload()}.${this.calculateSignature()}`
     }
 
     private calculateSignature(): string

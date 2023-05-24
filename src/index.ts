@@ -21,7 +21,9 @@ const port = Number.parseInt(process.env.PORT ?? '6969')
 
 
 app.use(express.json())
-app.use(authmw({}))
+app.use(authmw({
+    insecureFilter: request => [ '/auth/authenticate', '/auth/refresh' ].includes(request.url),
+}))
 
 
 
