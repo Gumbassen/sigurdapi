@@ -9,29 +9,36 @@ const jsonFormatting = winston.format.combine(
     winston.format.json(),
 )
 
-const log: Logger = winston.createLogger({
-    level:      'silly',
-    transports: [
-        new winston.transports.File({
-            filename: `${process.cwd()}/logs/error.log`,
-            level:    'error',
-            format:   jsonFormatting,
-        }),
-        new winston.transports.File({
-            filename: `${process.cwd()}/logs/debug.log`,
-            level:    'info',
-            format:   jsonFormatting,
-        }),
-    ],
-    exceptionHandlers: [
-        new winston.transports.File({
-            filename:         `${process.cwd()}/logs/exceptions.log`,
-            level:            'silly',
-            format:           jsonFormatting,
-            handleExceptions: true,
-        }),
-    ],
-})
+const log: Logger = winston.createLogger()
+
+log.add(new winston.transports.File({
+    filename: `${process.cwd()}/logs/error.log`,
+    level:    'error',
+    format:   jsonFormatting,
+}))
+
+log.add(new winston.transports.File({
+    filename: `${process.cwd()}/logs/debug.log`,
+    level:    'info',
+    format:   jsonFormatting,
+}))
+
+log.add(new winston.transports.File({
+    filename:         `${process.cwd()}/logs/exceptions.log`,
+    level:            'error',
+    format:           jsonFormatting,
+    handleExceptions: true,
+}))
+
+log.add(new winston.transports.Console({
+    format: winston.format.combine(
+        winston.format.json(),
+        winston.format.errors({ stack: true }),
+        winston.format.prettyPrint({ colorize: true }),
+    ),
+    level:            'error',
+    handleExceptions: true,
+}))
 
 if(process.env.NODE_ENV !== 'production')
 {
