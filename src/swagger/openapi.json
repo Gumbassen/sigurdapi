@@ -1,0 +1,2596 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Super-mega-giga-corp ApS A/S Gmbh Ltd",
+    "description": "I haven't made this description yet.",
+    "version": "0.0.1"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:6969/"
+    }
+  ],
+  "tags": [
+    {
+      "name": "auth",
+      "description": "Everything autentication"
+    },
+    {
+      "name": "user",
+      "description": "Everything users"
+    },
+    {
+      "name": "entry",
+      "description": "Everything time-entries"
+    },
+    {
+      "name": "timetag",
+      "description": "Everything time-tags"
+    },
+    {
+      "name": "location",
+      "description": "Everything locations"
+    },
+    {
+      "name": "role",
+      "description": "Everything userroles"
+    }
+  ],
+  "paths": {
+    "/auth/authenticate": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Authenticates the user",
+        "description": "Does not require authentication",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthenticationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Retrieves a new access token using a refresh token",
+        "description": "A refresh token must be used in place of the access token for the bearer token.",
+        "security": [
+          {
+            "refreshBearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          }
+        }
+      }
+    },
+    "/user/current": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Returns the currently authorized user",
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FullUser"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          }
+        }
+      }
+    },
+    "/user": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Returns a list of all users",
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Creates a new user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/User"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "409": {
+            "$ref": "#/components/responses/UniqueValueError"
+          }
+        }
+      }
+    },
+    "/user/{userId}": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "The ID of the user",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "summary": "Returns the full profile of a user",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "user"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "The ID of the user",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "summary": "Updates a users information",
+        "requestBody": {
+          "description": "The information to be updated",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/User"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Deletes a user",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "The ID of the user",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The user has been deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/user/{userId}/locations": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "The ID of the user",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "summary": "Returns a list of locations associated with the user",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Location"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/user/{userId}/roles": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "The ID of the user",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "summary": "Returns a list of the users roles",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserRole"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/user/{userId}/permissions": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Returns the effective permissions of a user",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "The ID of the user",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserRolePermission"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/user/{userId}/tagcollections": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Returns the users tag collections",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "The ID of the user",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TimeTag"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Creates a new tag collection",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "The ID of the user",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "TimeEntryTypeId": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "TimeTagIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "format": "int32"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The tag collection was created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeEntryTypeCollection"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          },
+          "409": {
+            "$ref": "#/components/responses/UniqueValueError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Deletes a tag collection",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "The ID of the user",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The tag collection was deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/entries": {
+      "get": {
+        "tags": [
+          "entry"
+        ],
+        "summary": "Returns time entries by searching for them using search parameters",
+        "description": "This endpoint allows the client to search for time-entries using any combination of query parameters.\n\nAt least one search-parameter must be given.",
+        "parameters": [
+          {
+            "name": "location",
+            "in": "query",
+            "description": "One or more location IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            "style": "pipeDelimited"
+          },
+          {
+            "name": "user",
+            "in": "query",
+            "description": "One or more user IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            "style": "pipeDelimited"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "Constrain results to entries that lie on or after this date",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "timestamp"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "Constrain results to entries that lie on or before this date",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "timestamp"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "One or more time-entry type IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            "style": "pipeDelimited"
+          },
+          {
+            "name": "fulfillsTag",
+            "in": "query",
+            "description": "One or more time-tag IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            "style": "pipeDelimited"
+          },
+          {
+            "name": "fulfillsRule",
+            "in": "query",
+            "description": "One or more time-tag rule IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            "style": "pipeDelimited"
+          },
+          {
+            "name": "group",
+            "in": "query",
+            "description": "One or more grouping IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            "style": "pipeDelimited"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TimeEntry"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          }
+        }
+      }
+    },
+    "/entry": {
+      "post": {
+        "tags": [
+          "entry"
+        ],
+        "summary": "Creates a new time-entry",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeEntry"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          }
+        }
+      }
+    },
+    "/entry/{entryId}": {
+      "get": {
+        "tags": [
+          "entry"
+        ],
+        "summary": "Returns a time-entry",
+        "parameters": [
+          {
+            "name": "entryId",
+            "in": "path",
+            "description": "The time-entry ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeEntry"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "entry"
+        ],
+        "summary": "Updates a time-entry",
+        "parameters": [
+          {
+            "name": "entryId",
+            "in": "path",
+            "description": "The time-entry ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeEntry"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The time-entry has been updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "entry"
+        ],
+        "summary": "Deletes a time-etnry",
+        "parameters": [
+          {
+            "name": "entryId",
+            "in": "path",
+            "description": "The time-entry ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The resource has been deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/entry/{entryId}/messages": {
+      "get": {
+        "tags": [
+          "entry"
+        ],
+        "summary": "Returns all messages on a time-entry",
+        "parameters": [
+          {
+            "name": "entryId",
+            "in": "path",
+            "description": "The time-entry ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TimeEntryMessage"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "entry"
+        ],
+        "summary": "Creates a new message on a time-entry",
+        "parameters": [
+          {
+            "name": "entryId",
+            "in": "path",
+            "description": "The time-entry ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeEntryMessage"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The time-entry message was created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeEntryMessage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/timetag": {
+      "get": {
+        "tags": [
+          "timetag"
+        ],
+        "summary": "Returns all time-tags",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TimeTag"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "timetag"
+        ],
+        "summary": "Creates a new time-tag",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeTagCreationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The time-tag was created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FullTimeTag"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "409": {
+            "$ref": "#/components/responses/UniqueValueError"
+          }
+        }
+      }
+    },
+    "/timetag/{timeTagId}": {
+      "get": {
+        "tags": [
+          "timetag"
+        ],
+        "summary": "Returns a time-tag",
+        "parameters": [
+          {
+            "name": "timeTagId",
+            "in": "path",
+            "description": "The time-tag ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FullTimeTag"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "timetag"
+        ],
+        "summary": "Updates a time-tag",
+        "parameters": [
+          {
+            "name": "timeTagId",
+            "in": "path",
+            "description": "The time-tag ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The time-tag has been updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FullTimeTag"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "timetag"
+        ],
+        "summary": "Deletes a time-tag",
+        "parameters": [
+          {
+            "name": "timeTagId",
+            "in": "path",
+            "description": "The time-tag ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The time-tag has been deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/timetag/{timeTagId}/rules": {
+      "get": {
+        "tags": [
+          "timetag"
+        ],
+        "summary": "Returns all rules on a time-tag",
+        "parameters": [
+          {
+            "name": "timeTagId",
+            "in": "path",
+            "description": "The time-tag ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TimeTagRule"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "timetag"
+        ],
+        "summary": "Creates a new rule on a time-tag",
+        "parameters": [
+          {
+            "name": "timeTagId",
+            "in": "path",
+            "description": "The time-tag ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeTagRule"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The time-tag rule was created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeTagRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          },
+          "409": {
+            "$ref": "#/components/responses/UniqueValueError"
+          }
+        }
+      }
+    },
+    "/timetag/{timeTagId}/rules/{ruleId}": {
+      "get": {
+        "tags": [
+          "timetag"
+        ],
+        "summary": "Returns a specific rule on a time-tag",
+        "parameters": [
+          {
+            "name": "timeTagId",
+            "in": "path",
+            "description": "The time-tag ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ruleId",
+            "in": "path",
+            "description": "The time-tag rule ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeTagRule"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "timetag"
+        ],
+        "summary": "Deletes a rule from a time-tag",
+        "parameters": [
+          {
+            "name": "timeTagId",
+            "in": "path",
+            "description": "The time-tag ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ruleId",
+            "in": "path",
+            "description": "The time-tag rule ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The time-tag rule has been deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/location": {
+      "get": {
+        "tags": [
+          "location"
+        ],
+        "summary": "Returns a list of all locations",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Location"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "location"
+        ],
+        "summary": "Creates a new location",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Location"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Location"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "409": {
+            "$ref": "#/components/responses/UniqueValueError"
+          }
+        }
+      }
+    },
+    "/location/{locationId}": {
+      "put": {
+        "tags": [
+          "location"
+        ],
+        "summary": "Updates a location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "in": "path",
+            "description": "The ID of the location being updated",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The location has been updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Location"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "location"
+        ],
+        "summary": "Deletes a location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "in": "path",
+            "description": "The ID of the location being deleted",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The location has been deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/location/{locationId}/users": {
+      "get": {
+        "tags": [
+          "location"
+        ],
+        "summary": "Returns all users that work under this location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "in": "path",
+            "description": "The ID of the location",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          }
+        }
+      }
+    },
+    "/location/{locationId}/leaders": {
+      "get": {
+        "tags": [
+          "location"
+        ],
+        "summary": "Returns all users designated as leaders of this location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "in": "path",
+            "description": "The ID of the location",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          }
+        }
+      }
+    },
+    "/location/{locationId}/leader/{leaderId}": {
+      "post": {
+        "tags": [
+          "location"
+        ],
+        "summary": "Adds a user as a leader of a location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "in": "path",
+            "description": "The ID of the location",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "leaderId",
+            "in": "path",
+            "description": "The ID of the leader",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The leader has been added to the location"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "location"
+        ],
+        "summary": "Removes a leader of a location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "in": "path",
+            "description": "The ID of the location",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "leaderId",
+            "in": "path",
+            "description": "The ID of the leader",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The leader has been removed from the location"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/role": {
+      "get": {
+        "tags": [
+          "role"
+        ],
+        "summary": "Returns all user-roles",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserRole"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "role"
+        ],
+        "summary": "Creates a new user-role",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserRole"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The user-role has been created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRole"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "409": {
+            "$ref": "#/components/responses/UniqueValueError"
+          }
+        }
+      }
+    },
+    "/role/{roleId}": {
+      "get": {
+        "tags": [
+          "role"
+        ],
+        "summary": "Returns a user-role",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "description": "The ID of the user-role",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FullUserRole"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "role"
+        ],
+        "summary": "Updates a user-role",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "description": "The ID of the user-role",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The user-role has been updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FullUserRole"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "role"
+        ],
+        "summary": "Deletes a user-role",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "description": "The ID of the user-role",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The user-role has been deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/role/{roleId}/permission": {
+      "get": {
+        "tags": [
+          "role"
+        ],
+        "summary": "Returns all permissions of a user-role",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "description": "The ID of the user-role",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserRolePermission"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/role/{roleId}/permission/{permissionId}": {
+      "post": {
+        "tags": [
+          "role"
+        ],
+        "summary": "Adds a permission to a user-role",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "description": "The ID of the user-role",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "permissionId",
+            "in": "path",
+            "description": "The ID of the permission",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The permission has been added to the user-role"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "role"
+        ],
+        "summary": "Removes a permission from a user-role",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "description": "The ID of the user-role",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "permissionId",
+            "in": "path",
+            "description": "The ID of the permission",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The permission has been removed from the user-role"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/roles/permission": {
+      "get": {
+        "tags": [
+          "role"
+        ],
+        "summary": "Returns all possible user-role permissions",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserRolePermission"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          }
+        }
+      }
+    },
+    "/roles/permission/{permissionId}": {
+      "get": {
+        "tags": [
+          "role"
+        ],
+        "summary": "Returns all possible user-role permissions",
+        "parameters": [
+          {
+            "name": "permissionId",
+            "in": "path",
+            "description": "The ID of the permission",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRolePermission"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "components": {
+    "responses": {
+      "InvalidRequestError": {
+        "description": "Invalid request",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "NotAuthenticatedError": {
+        "description": "You need authentication to use this resource"
+      },
+      "NotAllowedError": {
+        "description": "You do not have sufficient permissions to operate on this resource"
+      },
+      "UniqueValueError": {
+        "description": "One or more fields does not fulfill their uniqueness constraints",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "NotFoundError": {
+        "description": "The given identifier does not match an existing resource"
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "refreshBearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Company": {
+        "type": "object",
+        "properties": {
+          "Id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Name": {
+            "type": "string"
+          }
+        }
+      },
+      "Location": {
+        "type": "object",
+        "properties": {
+          "Id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Name": {
+            "type": "string"
+          },
+          "Description": {
+            "type": "string",
+            "nullable": true
+          },
+          "LeaderIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "FullLocation": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Location"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "Leaders": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "UserRole": {
+        "type": "object",
+        "properties": {
+          "Id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Name": {
+            "type": "string"
+          },
+          "Description": {
+            "type": "string",
+            "nullable": true
+          },
+          "PermissionIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "FullUserRole": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "Permissions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/UserRolePermission"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "UserRolePermission": {
+        "type": "object",
+        "properties": {
+          "Id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Name": {
+            "type": "string"
+          },
+          "Description": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "TimeTag": {
+        "type": "object",
+        "properties": {
+          "Id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Name": {
+            "type": "string"
+          },
+          "BasisAmount": {
+            "type": "number"
+          },
+          "BasisType": {
+            "type": "string"
+          },
+          "RuleIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "FullTimeTag": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TimeTag"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "Rules": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TimeTagRule"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "TimeTagRule": {
+        "type": "object",
+        "properties": {
+          "Id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Name": {
+            "type": "string"
+          },
+          "Type": {
+            "type": "string"
+          },
+          "From": {
+            "type": "string",
+            "format": "time-string"
+          },
+          "To": {
+            "type": "string",
+            "format": "time-string"
+          },
+          "Amount": {
+            "type": "number"
+          },
+          "Weekdays": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday",
+                "Holiday"
+              ]
+            }
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "Id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "CompanyId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "UserRoleId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "FullName": {
+            "type": "string"
+          },
+          "FirstName": {
+            "type": "string"
+          },
+          "MiddleName": {
+            "type": "string",
+            "nullable": true
+          },
+          "SurName": {
+            "type": "string"
+          },
+          "ProfileImage": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "TimeTagCollectionIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "HiredDate": {
+            "type": "integer",
+            "format": "timestamp",
+            "nullable": true
+          },
+          "FiredDate": {
+            "type": "integer",
+            "format": "timestamp",
+            "nullable": true
+          },
+          "LocationIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "FullUser": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/User"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "Company": {
+                "$ref": "#/components/schemas/Company"
+              },
+              "UserRole": {
+                "$ref": "#/components/schemas/UserRole"
+              },
+              "TimeTagCollections": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TimeTag"
+                }
+              },
+              "Locations": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Location"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "TimeEntryType": {
+        "type": "object",
+        "properties": {
+          "Id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Name": {
+            "type": "string"
+          }
+        }
+      },
+      "TimeEntryTypeCollection": {
+        "type": "object",
+        "properties": {
+          "Id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "UserId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "TimeEntryTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "TimeTagIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "FullTimeEntryTypeCollection": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TimeEntryTypeCollection"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "User": {
+                "$ref": "#/components/schemas/User"
+              },
+              "TimeEntryType": {
+                "$ref": "#/components/schemas/TimeEntryType"
+              },
+              "TimeTags": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TimeTag"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "TimeEntry": {
+        "type": "object",
+        "properties": {
+          "Id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "UserId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "Start": {
+            "type": "integer",
+            "format": "timestamp"
+          },
+          "End": {
+            "type": "integer",
+            "format": "timestamp"
+          },
+          "Duration": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "GroupingId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "MessageIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "LocationId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "TimeEntryTypeId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        }
+      },
+      "FullTimeEntry": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TimeEntry"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "User": {
+                "$ref": "#/components/schemas/User"
+              },
+              "Messages": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TimeEntryMessage"
+                }
+              },
+              "Location": {
+                "$ref": "#/components/schemas/Location"
+              },
+              "TimeEntryType": {
+                "$ref": "#/components/schemas/TimeEntryType"
+              }
+            }
+          }
+        ]
+      },
+      "TimeEntryMessage": {
+        "type": "object",
+        "properties": {
+          "Id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "UserId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "TimeEntryId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "CreatedAt": {
+            "type": "integer",
+            "format": "timestamp"
+          },
+          "Message": {
+            "type": "string"
+          }
+        }
+      },
+      "FullTimeEntryMessage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TimeEntryMessage"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "User": {
+                "$ref": "#/components/schemas/User"
+              },
+              "TimeEntry": {
+                "$ref": "#/components/schemas/TimeEntry"
+              }
+            }
+          }
+        ]
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "ErrorCode": {
+            "type": "integer"
+          },
+          "Reason": {
+            "type": "string"
+          }
+        }
+      },
+      "TimeTagCreationRequest": {
+        "type": "object",
+        "properties": {
+          "Name": {
+            "type": "string"
+          },
+          "BasisAmount": {
+            "type": "number"
+          },
+          "BasisType": {
+            "type": "string"
+          },
+          "Rules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "Name": {
+                  "type": "string"
+                },
+                "Type": {
+                  "type": "string"
+                },
+                "From": {
+                  "type": "string",
+                  "format": "time-string"
+                },
+                "To": {
+                  "type": "string",
+                  "format": "time-string"
+                },
+                "Amount": {
+                  "type": "number"
+                },
+                "Weekdays": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "Monday",
+                      "Tuesday",
+                      "Wednesday",
+                      "Thursday",
+                      "Friday",
+                      "Saturday",
+                      "Sunday",
+                      "Holiday"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "TokenObject": {
+        "description": "A JWT token.\n\nThe JWT format consists of 3 base64-encoded strings, delimited by a '.' (dot).\n\nThe first part is the token meta-data.  \nThe second part is the token content.  \nThe third part is the server-generated hash, which protects against tampering.",
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "format": "jwt",
+            "pattern": "^[\\w-]+\\.[\\w-]+\\.[\\w-]+$"
+          },
+          "expiresAt": {
+            "type": "integer",
+            "format": "timestamp"
+          },
+          "issuedAt": {
+            "type": "integer",
+            "format": "timestamp"
+          }
+        }
+      },
+      "AuthenticationRequest": {
+        "type": "object",
+        "properties": {
+          "Username": {
+            "type": "string"
+          },
+          "Password": {
+            "type": "string"
+          }
+        }
+      },
+      "AuthenticationResponse": {
+        "description": "A JWT token that must be included in all requests.  \nHas a lifetime of about 30 minutes.\n\nA JWT token that must be used to acquire new access tokens.  \nHas a lifetime of about 30 days.\n\nThe refresh token can be used to generate new access tokens.",
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "$ref": "#/components/schemas/TokenObject"
+          },
+          "refreshToken": {
+            "$ref": "#/components/schemas/TokenObject"
+          }
+        }
+      }
+    }
+  }
+}

@@ -4,6 +4,7 @@
 import express from 'express'
 import log from './utils/logger'
 import dotenv from 'dotenv'
+import swagger from 'swagger-ui-dist'
 import fsrecursivesearch from './utils/fsrecursivesearch'
 dotenv.config()
 
@@ -24,6 +25,8 @@ app.get('/', (req, res) =>
     res.send('Hello World!')
 })
 
+
+app.use('/swagger', express.static(swagger.absolutePath()))
 
 
 // Autoload routes from the routes folder
