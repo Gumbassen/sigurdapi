@@ -1,17 +1,15 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-// import jwt, { Jwt, JwtPayload, JwtHeader } from "jsonwebtoken"
-import { randomUUID } from 'crypto'
+import { createHmac, randomUUID } from 'crypto'
 import log from './logger'
-import { sha256 } from 'js-sha256'
 
 if(typeof process.env.JWT_SECRET !== 'string')
     throw new Error('There is no "process.env.JWT_SECRET"...')
 
-const  SECRET               = sha256(process.env.JWT_SECRET)
+const        SECRET         = process.env.JWT_SECRET
 export const ALLOW_ALG_NONE = process.env.JWT_ALLOW_ALG_NONE === '1'
 
-log.silly(`Spilled the beans! JWT Secret: ${SECRET}`)
+log.silly(`Spilled te beans! JWT Secret: ${SECRET}`)
 
 
 // Custom errors
@@ -47,9 +45,6 @@ export interface TokenHeader
     /** Expiration time: a unix epoch which if passed the token must no longer be accepted */
     exp: number
 
-    /** Not before time: a unix epoch which if not passed the token must not yet be accepted */
-    nbf: number
-
     /** Issued at: a unix epoch of when the token was issued */
     ist: number
 
@@ -59,6 +54,9 @@ export interface TokenHeader
 
 export interface TokenPayload
 {
+    /** Token type: Determines whether this is an access or refresh token */
+    typ: 'access' | 'refresh'
+
     /** Subject: string or url. Should be locally or globally unique. */
     sub?: string
 }
@@ -68,8 +66,6 @@ export default class Token
 {
     public static fromAuthHeader(value?: string): Token
     {
-        log.silly(`Generated token from auth-header: ${value}`)
-
         if(typeof value !== 'string')
             throw new TokenInvalidError('Token value is null')
 
@@ -81,67 +77,149 @@ export default class Token
         if(parts.length !== 3)
             throw new TokenInvalidError(`parts.length=${parts.length} (should be 3)`)
     
-        const [ header, payload, signature ] = parts.map(part => Buffer.from(part, 'base64').toString())
-        return new this(header, payload, signature)
+        const token = new this()
+        token.header    = this.parseHeader(parts[0])
+        token.payload   = this.parsePayload(parts[1])
+        token.signature = parts[2]
+        return token
     }
 
-    private header: TokenHeader
-    private payload: TokenPayload
+    public static fromPayload(payload: TokenPayload, ttl?: number): Token
+    {
+        const now = Date.now()
 
+        if(typeof ttl === 'undefined')
+            ttl = 30 * 60 * 1000 // Default 30 minutes
+
+        const token = new this()
+        token.header = {
+            typ: 'JWT',
+            alg: 'HS256',
+            exp: now + ttl,
+            ist: now,
+            iss: 'Bongotrummer',
+            jti: randomUUID(),
+        }
+        token.payload = payload
+        token.sign()
+        return token
+    }
+
+    private header!: TokenHeader
+    private payload!: TokenPayload
+
+    private verified = false
     private signature?: string = undefined
 
-    constructor(header: string, payload: string, signature?: string)
+    private constructor()
     {
-        this.header    = this.parseHeader(header)
-        this.payload   = this.parsePayload(payload)
-        this.signature = signature
+        // Empty
     }
 
     public verify(): boolean
     {
+        if(this.hasHeaderField('typ') && this.getHeaderField('typ') !== 'JWT')
+            return false
+
         if(typeof this.signature !== 'string')
             return false
+
+        if(this.verified)
+            return true
 
         if(this.signature !== this.calculateSignature())
             return false
 
+        this.verified = true
         return true
     }
 
     public sign(): void
     {
+        if(this.verified)
+            return
+
+        this.verified  = true
         this.signature = this.calculateSignature()
     }
 
-    public hasHeader(field: keyof TokenHeader): boolean
+    public unsign(): void
+    {
+        this.verified  = false
+        this.signature = undefined
+    }
+
+    public hasSignature(): boolean
+    {
+        return typeof this.signature !== 'undefined'
+    }
+
+    /**
+     * Checks if the token header contains a given field.
+     */
+    public hasHeaderField(field: keyof TokenHeader): boolean
     {
         return typeof this.header[field] !== 'undefined'
     }
 
-    public getHeader<T extends keyof TokenHeader>(field: T): TokenHeader[T]
+    /**
+     * Gets the value of a specific header field.
+     */
+    public getHeaderField<T extends keyof TokenHeader>(field: T): TokenHeader[T]
     {
-        if(!this.hasHeader(field))
+        if(!this.hasHeaderField(field))
             throw new Error(`Token header does not contain the field "${String(field)}"`)
 
         return this.header[field]
     }
 
-    public hasPayload(field: keyof TokenPayload): boolean
+    /**
+     * Sets the value of a specific header field.
+     * 
+     * Resets the token signature.
+     */
+    public setHeaderField<T extends keyof TokenHeader>(field: T, value: TokenHeader[T]): void
+    {
+        this.header[field] = value
+        this.unsign()
+    }
+
+    /**
+     * Checks if the token payload contains a given field.
+     */
+    public hasPayloadField(field: keyof TokenPayload): boolean
     {
         return typeof this.payload[field] !== 'undefined'
     }
 
-    public getPayload<T extends keyof TokenPayload>(field: T): TokenPayload[T]
+    /**
+     * Gets the value of a specific payload field.
+     */
+    public getPayloadField<T extends keyof TokenPayload>(field: T): TokenPayload[T]
     {
-        if(!this.hasPayload(field))
+        if(!this.hasPayloadField(field))
             throw new Error(`Token payload does not contain the field "${String(field)}"`)
 
         return this.payload[field]
     }
 
+    /**
+     * Sets the value of a specific payload field.
+     * 
+     * Resets the token signature.
+     */
+    public setPayloadField<T extends keyof TokenPayload>(field: T, value: TokenPayload[T]): void
+    {
+        this.payload[field] = value
+        this.unsign()
+    }
+
     private calculateSignature(): string
     {
-        const algorithm = this.getHeader('alg')
+        if(!this.hasHeaderField('alg'))
+            throw new TokenInvalidError('Missing "alg" field.')
+        
+        const algorithm = this.getHeaderField('alg')
         switch(algorithm)
         {
             case 'none':
@@ -150,25 +228,34 @@ export default class Token
                 return ''
 
             case 'HS256':
-                return this.signature ?? ''
-
-            case 'RS256':
-                return this.signature ?? ''
+                return createHmac('sha256', SECRET)
+                    .update(`${this.getEncodedHeader()}.${this.getEncodedPayload()}`)
+                    .digest('base64url')
 
             default:
                 throw new TokenUnsupportedAlgorithmError(algorithm)
         }
     }
 
-    private parseHeader(header: string): TokenHeader
+    private getEncodedHeader(): string
     {
-        // TODO: Improve this
-        return JSON.parse(header)
+        return Buffer.from(JSON.stringify(this.header)).toString('base64url')
     }
 
-    private parsePayload(payload: string): TokenPayload
+    private getEncodedPayload(): string
+    {
+        return Buffer.from(JSON.stringify(this.payload)).toString('base64url')
+    }
+
+    private static parseHeader(header: string): TokenHeader
     {
         // TODO: Improve this
-        return JSON.parse(payload)
+        return JSON.parse(Buffer.from(header, 'base64url').toString())
+    }
+
+    private static parsePayload(payload: string): TokenPayload
+    {
+        // TODO: Improve this
+        return JSON.parse(Buffer.from(payload, 'base64url').toString())
     }
 }
