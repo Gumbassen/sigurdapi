@@ -1,0 +1,98 @@
+
+syntax = "proto3";
+
+message Company {
+    int32  Id   = 1;
+    string Name = 2;
+}
+
+message Location {
+             in32   Id          = 1;
+             string Name        = 2;
+    optional string Description = 3;
+    repeated int32  LeaderIds   = 4;
+}
+
+message UserRole {
+             int32  Id            = 1;
+             string Name          = 2;
+    optional string Description   = 3;
+    repeated int32  PermissionIds = 4;
+}
+
+message UserRolePermission {
+             int32  Id          = 1;
+             string Name        = 2;
+    optional string Description = 3;
+}
+
+message TimeTag {
+             int32  Id          = 1;
+             string Name        = 2;
+             float  BasisAmount = 3;
+             string BasisType   = 4;
+    repeated int32  RuleIds     = 5;
+}
+
+enum TimeTagRuleWeekday {
+    Monday    = 1;
+    Tuesday   = 2;
+    Wednesday = 3;
+    Thursday  = 4;
+    Friday    = 5;
+    Saturday  = 6;
+    Sunday    = 7;
+    Holiday   = 8;
+}
+
+message TimeTagRule {
+             int32              Id          = 1;
+             string             Name        = 2;
+             string             Type        = 3;
+             string             From        = 4;  // hh:mm:ss
+             string             To          = 5;  // hh:mm:ss
+             int32              FromSeconds = 6;  // seconds passed since midnight
+             int32              ToSeconds   = 7;  // seconds passed since midnight
+             float              Amount      = 8;
+    repeated TimeTagRuleWeekday Weekdays    = 9;
+}
+
+message User {
+             int32     Id                   = 1;
+             int32     CompanyId            = 2;
+             int32     UserRoleId           = 3;
+             string    FullName             = 4;
+             string    FirstName            = 5;
+    optional string    MiddleName           = 6;
+             string    SurName              = 7;
+    optional int32     ProTypeImage         = 8;
+    repeated int32     TimeTagCollectionIds = 9;
+    optional timestamp HiredDate            = 10;
+    optional timestamp FiredType            = 11;
+    repeated int32     LocationIds          = 12;
+}
+
+message TimeEntryType {
+    int32  Id   = 1;
+    string Name = 2;
+}
+
+message TimeEntry {
+              int32     Id              = 1;
+    optional  int32     UserId          = 2;
+              timestamp Start           = 3;
+              timestamp End             = 4;
+              int32     Duration        = 5;  // TimeEntry duration in seconds
+    optional  int32     GroupingId      = 6;
+    repeated  int32     MessageIds      = 7;
+              int32     LocationId      = 8;
+    optional  int32     TimeEntryTypeId = 9;
+}
+
+message TimeEntryMessage {
+    int32     Id          = 1;
+    int32     UserId      = 2;
+    int32     TimeEntryId = 3;
+    timestamp CreatedAt   = 4;
+    string    Message     = 5;
+}
