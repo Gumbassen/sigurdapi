@@ -45,8 +45,8 @@ if(process.env.NODE_ENV !== 'production')
     // Only write to console if not in production
     log.add(new winston.transports.Console({
         format: winston.format.combine(
-            winston.format.colorize(),
-            winston.format.simple(),
+            winston.format.colorize({ all: true }),
+            winston.format.cli(),
         ),
         level: 'silly',
     }))

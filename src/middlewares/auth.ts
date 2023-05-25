@@ -16,7 +16,7 @@ export default function(options: AuthMiddlewareOptions): RequestHandler
 {
     const defaultHandler = (where: string, req: Request, res: Response) =>
     {
-        log.http(`Default handler for auth middleware was used in place of ${where}: ${req.url}`)
+        log.warn(`Default handler for auth middleware was used in place of '${where}': ${req.url}`)
         res.sendStatus(401).end()
     }
 

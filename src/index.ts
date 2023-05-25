@@ -8,6 +8,7 @@ import swagger from 'swagger-ui-dist'
 import fsrecursivesearch from './utils/fsrecursivesearch'
 import authmw from './middlewares/auth'
 import mapiterator from './utils/mapiterator'
+import database from './utils/database'
 dotenv.config()
 
 // Changes the working directory to the where index.ts/js is.
@@ -18,7 +19,11 @@ process.chdir(__dirname)
 const app  = express()
 const port = Number.parseInt(process.env.PORT ?? '6969')
 
+// Remove the "x-powered-by: Express" header
+app.disable('x-powered-by')
+
 // Initialize middlewares
+app.use(database.middleware())
 app.use(express.json())
 app.use(authmw({
     insecureFilter: request =>
@@ -36,11 +41,12 @@ app.use(authmw({
     },
 }))
 
+
 // This shit is just for debugging
 // Dont mind
-app.get('/', (req, res) =>
+app.get('/', (_, res) =>
 {
-    log.http('Hello world was visited.')
+    log.info('Hello world was visited.')
     res.send('Hello World!')
 })
 
@@ -68,14 +74,17 @@ Promise.all([
         for(const { error, path } of errors)
             log.error(`Failed to import route endpoint file "${path}": "${error}"`)
     }),
+
+    // Connects to MySQL
+    database.connect(),
 ]).then(() =>
 {
     // Start the server
     app.listen(port, () =>
     {
-        log.info(`⚡ [SERVER] Listening on port ${port}`)
+        log.info(`⚡ [EXPRESS] Listening on port ${port}`)
     })
 }).catch(errors =>
 {
-    log.error(`Failed to start...\n\t${errors.map(String).join('\n\t')}`)
+    log.error(`🚑 [SERVER] Failed to start...\n\t${errors.map(String).join('\n\t')}`)
 })
