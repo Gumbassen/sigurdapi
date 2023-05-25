@@ -22,7 +22,15 @@ const port = Number.parseInt(process.env.PORT ?? '6969')
 // Remove the "x-powered-by: Express" header
 app.disable('x-powered-by')
 
+// Disable ETag header (disables some caching)
+app.set('etag', false)
+
 // Initialize middlewares
+app.use((req, res, next) =>
+{
+    log.debug(`[HTTP] [${req.method}] ${req.url}`)
+    next()
+})
 app.use(database.middleware())
 app.use(express.json())
 app.use(authmw({

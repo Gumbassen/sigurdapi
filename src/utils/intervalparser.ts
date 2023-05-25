@@ -1,18 +1,29 @@
 /* eslint-disable no-fallthrough */
 
 
-export interface IntervalPeriod {
-    /** Counted as 365 days */
+interface MutableIntervalPeriod {
     years: number
-    /** Counted as 30 days */
     months: number
     days: number
     hours: number
     minutes: number
     seconds: number
+    totalSeconds: number
 }
 
-function cascadeOverflow(interval: IntervalPeriod, from: keyof IntervalPeriod, to: keyof IntervalPeriod, modulus: number): number
+export interface IntervalPeriod extends MutableIntervalPeriod {
+    /** Counted as 365 days */
+    readonly years: number
+    /** Counted as 30 days */
+    readonly months: number
+    readonly days: number
+    readonly hours: number
+    readonly minutes: number
+    readonly seconds: number
+    readonly totalSeconds: number
+}
+
+function cascadeOverflow(interval: MutableIntervalPeriod, from: keyof MutableIntervalPeriod, to: keyof MutableIntervalPeriod, modulus: number): number
 {
     const r = interval[from] % modulus
     const m = (interval[from] - r) / modulus
@@ -28,13 +39,14 @@ export default function(str: string): IntervalPeriod
     if(str.length < 3)
         throw new Error(`Interval "${str}" is invalid.`)
 
-    const iv: IntervalPeriod = {
-        years:   0,
-        months:  0,
-        days:    0,
-        hours:   0,
-        minutes: 0,
-        seconds: 0,
+    const iv: MutableIntervalPeriod = {
+        years:        0,
+        months:       0,
+        days:         0,
+        hours:        0,
+        minutes:      0,
+        seconds:      0,
+        totalSeconds: 0,
     }
 
     let state = 0
@@ -120,6 +132,13 @@ export default function(str: string): IntervalPeriod
     const months = cascadeOverflow(iv, 'days', 'months', 30)
     iv.days += Math.floor(months * .4) // A single month is closer to 30.4 days on average
     cascadeOverflow(iv, 'months', 'years', 12)
+
+    iv.totalSeconds = iv.years   * 31104000
+                    + iv.months  *  2592000
+                    + iv.days    *    86400
+                    + iv.hours   *     3600
+                    + iv.minutes *       60
+                    + iv.seconds *        1
 
     return iv
 }

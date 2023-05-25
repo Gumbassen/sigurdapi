@@ -77,6 +77,9 @@ export interface TokenPayload
 
     /** Subject: string or url. Should be locally or globally unique. */
     sub?: string
+
+    /** User ID: The current users ID */
+    uid: number
 }
 
 // The actual token class
@@ -241,6 +244,15 @@ export default class Token
     public toTokenString(): string
     {
         return `${this.getEncodedHeader()}.${this.getEncodedPayload()}.${this.calculateSignature()}`
+    }
+
+    public toTokenObject(): ResponseTypes.TokenObject
+    {
+        return {
+            token:     this.toTokenString(),
+            expiresAt: this.getHeaderField('exp'),
+            issuedAt:  this.getHeaderField('ist'),
+        }
     }
 
     private calculateSignature(): string

@@ -1,10 +1,19 @@
 
 import express, { Request, Response } from 'express'
+import nocache from 'nocache'
 import endpoint from '../../utils/endpoint'
 import log from './../../utils/logger'
 import { sql } from '../../utils/database'
+import Token, { TokenExpiredError, TokenInvalidError, TokenMissingError } from '../../utils/token'
+import intervalparser from '../../utils/intervalparser'
 
 const router = express.Router()
+router.use(nocache())
+
+
+const ttlAccess  = intervalparser(process.env.TOKEN_TTL_ACCESS  ?? 'P30I').totalSeconds
+const ttlRefresh = intervalparser(process.env.TOKEN_TTL_REFRESH ?? 'P1M').totalSeconds
+
 
 router.post('/authenticate', async (req: Request, res: Response) =>
 {
@@ -30,8 +39,7 @@ router.post('/authenticate', async (req: Request, res: Response) =>
     // FIXME: Add hashing to the passwords
     const result = await sql`
         SELECT
-            UserId,
-            Password
+            UserId
         FROM
             user_logins
         WHERE
@@ -39,15 +47,59 @@ router.post('/authenticate', async (req: Request, res: Response) =>
             AND Password = ${String(req.body.Password)}
         LIMIT 1`
 
-    res.status(200).send('OK').end()
-    
+    if(!result.length)
+    {
+        res.sendStatus(400).end()
+        return
+    }
+
+    const userId: number = result[0].UserId
+ 
+    const response: ResponseTypes.AuthenticationResponse = {
+        accessToken: Token.fromPayload({
+            typ: 'access',
+            uid: userId,
+        }, ttlAccess).toTokenObject(),
+        refreshToken: Token.fromPayload({
+            typ: 'refresh',
+            uid: userId,
+        }, ttlRefresh).toTokenObject(),
+    }
+
+    res.send(response)
 })
 
 router.post('/refresh', (req: Request, res: Response) =>
 {
-    log.info(req.path)
-    // Big sad
-    res.send('Hello from refresh')
+    try
+    {
+        const token = Token.fromRequest(req)
+        if(!token.verify() || token.getPayloadField('typ') !== 'refresh')
+        {
+            res.sendStatus(401).end()
+            return
+        }
+
+        const response: ResponseTypes.AuthenticationResponse = {
+            accessToken: Token.fromPayload({
+                typ: 'access',
+                uid: token.getPayloadField('uid'),
+            }).toTokenObject(),
+            refreshToken: token.toTokenObject(),
+        }
+
+        res.send(response)
+    }
+    catch(error)
+    {
+        if([ TokenMissingError, TokenExpiredError, TokenInvalidError ].some(type => error instanceof type))
+        {
+            res.sendStatus(401).end()
+            return
+        }
+
+        throw error
+    }
 })
 
 
