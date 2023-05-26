@@ -2,14 +2,32 @@
 
 // Environment setup
 import express from 'express'
-import log from './utils/logger'
 import dotenv from 'dotenv'
+import fs from 'fs'
+
+dotenv.config()
+let usingDotenvExample = false
+if(!fs.existsSync('./.env'))
+{
+    usingDotenvExample = true
+    dotenv.config({ path: './.env.example' })
+}
+
+import log from './utils/logger'
 import swagger from 'swagger-ui-dist'
 import fsrecursivesearch from './utils/fsrecursivesearch'
 import authmw from './middlewares/auth'
 import mapiterator from './utils/mapiterator'
 import database from './utils/database'
-dotenv.config()
+
+if(usingDotenvExample)
+{
+    log.warn('##############################################')
+    log.warn('# Using ".env.example" as ".env" is missing! #')
+    log.warn('##############################################')
+    log.warn('Please create a copy of ".env.example" and rename it to ".env"')
+}
+
 
 // Changes the working directory to the where index.ts/js is.
 // Otherwise any FS stuff thinks the root directory is the working directory (should be ./dist).

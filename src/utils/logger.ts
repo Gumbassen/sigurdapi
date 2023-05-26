@@ -1,7 +1,5 @@
 
 import winston, { Logger } from 'winston'
-import dotenv from 'dotenv'
-dotenv.config()
 
 
 const jsonFormatting = winston.format.combine(
