@@ -11,24 +11,33 @@ const jsonFormatting = winston.format.combine(
 
 const log: Logger = winston.createLogger()
 
-log.add(new winston.transports.File({
-    filename: `${process.cwd()}/logs/error.log`,
-    level:    'error',
-    format:   jsonFormatting,
-}))
+if(process.env.LOG_PERSISTENT_ERROR !== '0')
+{
+    log.add(new winston.transports.File({
+        filename: `${process.cwd()}/logs/error.log`,
+        level:    'error',
+        format:   jsonFormatting,
+    }))
+}
 
-log.add(new winston.transports.File({
-    filename: `${process.cwd()}/logs/debug.log`,
-    level:    'info',
-    format:   jsonFormatting,
-}))
+if(process.env.LOG_PERSISTENT_DEBUG !== '0')
+{
+    log.add(new winston.transports.File({
+        filename: `${process.cwd()}/logs/debug.log`,
+        level:    'info',
+        format:   jsonFormatting,
+    }))
+}
 
-log.add(new winston.transports.File({
-    filename:         `${process.cwd()}/logs/exceptions.log`,
-    level:            'error',
-    format:           jsonFormatting,
-    handleExceptions: true,
-}))
+if(process.env.LOG_PERSISTENT_EXCEPTIONS !== '0')
+{
+    log.add(new winston.transports.File({
+        filename:         `${process.cwd()}/logs/exceptions.log`,
+        level:            'error',
+        format:           jsonFormatting,
+        handleExceptions: true,
+    }))
+}
 
 log.add(new winston.transports.Console({
     format: winston.format.combine(
