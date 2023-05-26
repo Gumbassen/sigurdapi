@@ -10,6 +10,10 @@ import { sql } from '../../utils/database'
 
 const router = express.Router()
 
+interface TimeEntryWithDates extends ApiDataTypes.Objects.TimeEntry {
+    StartDate?: Date
+    EndDate?:   Date
+}
 
 router.post('/', async (req: Request, res: Response) =>
 {
@@ -28,7 +32,7 @@ router.post('/', async (req: Request, res: Response) =>
     ]
 
     // @ts-expect-error Im using this to build the object
-    const entry: ApiDataTypes.Objects.TimeEntry = {
+    const entry: TimeEntryWithDates = {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         CompanyId: res.locals.accessToken!.getPayloadField('cid'),
     }
@@ -54,12 +58,9 @@ router.post('/', async (req: Request, res: Response) =>
             case 'LocationId':
             case 'GroupingId':
             case 'TimeEntryTypeId':
-                entry[field] = value
-                break
-
             case 'Start':
             case 'End':
-                entry[field] = new Date(value)
+                entry[field] = value
                 break
         }
     }
@@ -86,7 +87,9 @@ router.post('/', async (req: Request, res: Response) =>
             return error('Param "TimeEntryTypeId" is invalid.')
     }
 
-    entry.Duration   = entry.End.getTime() - entry.Start.getTime()
+    entry.StartDate  = new Date(entry.Start)
+    entry.EndDate    = new Date(entry.End)
+    entry.Duration   = entry.EndDate.getTime() - entry.StartDate.getTime()
     entry.MessageIds = []
     
     try
@@ -97,8 +100,8 @@ router.post('/', async (req: Request, res: Response) =>
             SET
                 CompanyId       = ${entry.CompanyId},
                 UserId          = ${entry.UserId},
-                Start           = ${entry.Start},
-                End             = ${entry.End},
+                Start           = ${entry.StartDate},
+                End             = ${entry.EndDate},
                 Duration        = ${entry.Duration},
                 GroupingId      = ${entry.GroupingId ?? null},
                 LocationId      = ${entry.LocationId},
@@ -107,6 +110,8 @@ router.post('/', async (req: Request, res: Response) =>
         entry.Id = result.insertId
     
         log.silly(`Time entry was created:\n${JSON.stringify(entry, null, 2)}`)
+        delete entry.StartDate
+        delete entry.EndDate
     
         res.status(201).send(entry)
     }

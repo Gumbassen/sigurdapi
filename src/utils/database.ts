@@ -83,6 +83,26 @@ function connect(): Promise<undefined>
     return connectPromise
 }
 
+export class UnsafeParameter
+{
+    private value: string
+
+    public constructor(value: string)
+    {
+        this.value = value
+    }
+
+    public getValue(): string
+    {
+        return this.value
+    }
+}
+
+export function unsafe(sql: string): UnsafeParameter
+{
+    return new UnsafeParameter(sql)
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function sql<TReturn = any>(strings: TemplateStringsArray, ...tags: any[]): Promise<TReturn>
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -90,21 +110,52 @@ export function sql<TReturn = any>(sql: string, ...values: any[]): Promise<TRetu
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function sql<TReturn = any>(sqlParts: TemplateStringsArray | string | string[], ...values: any[]): Promise<TReturn>
 {
-    const sql: string = Array.isArray(sqlParts) ? sqlParts.join('?') : sqlParts as string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const preparedValues: any[] = []
+    const preparedSql: string[] = []
+    for(let i = 0; i < values.length; i++)
+    {
+        const value = values[i]
+        const sql   = sqlParts[i]
+        if(value instanceof UnsafeParameter)
+        {
+            preparedSql.push(sql)
+            preparedSql.push(value.getValue())
+            continue
+        }
+
+        if(Array.isArray(value) && !value.length)
+        {
+            preparedSql.push(sql)
+            preparedSql.push('?')
+            preparedValues.push('')
+            continue
+        }
+
+        preparedSql.push(sql)
+        preparedSql.push('?')
+        preparedValues.push(value)
+    }
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    preparedSql.push(sqlParts.at(-1)!)
 
     return new Promise((resolve, reject) =>
     {
-        connection.query(sql, values, (error, results) =>
-        {
-            if(error)
+        connection.query(
+            preparedSql.join(''),
+            preparedValues,
+            (error, results) =>
             {
-                const message = `[MYSQL] Query failed (#${error.errno} ${error.code}): ${error.sqlMessage}`
-                log.error(`${message}\nSQL: ${error.sql}`)
-                reject(message)
-                return
-            }
-            resolve(results)
-        })
+                if(error)
+                {
+                    const message = `[MYSQL] Query failed (#${error.errno} ${error.code}): ${error.sqlMessage}`
+                    log.error(`${message}\nSQL: ${error.sql}`)
+                    reject(message)
+                    return
+                }
+                resolve(results)
+            },
+        )
     })
 }
 
@@ -114,4 +165,6 @@ export default {
     connect,
     middleware,
     sql,
+    unsafe,
+    UnsafeParameter,
 }
