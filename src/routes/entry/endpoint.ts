@@ -1,17 +1,125 @@
+/* eslint-disable consistent-return */
 
 import express, { Request, Response } from 'express'
 import endpoint from '../../utils/endpoint'
 import log from './../../utils/logger'
 
+import entry from './entry'
+import messages from './messages'
+import { sql } from '../../utils/database'
+
 const router = express.Router()
 
 
-router.get('/', (req: Request, res: Response) =>
+router.post('/', async (req: Request, res: Response) =>
 {
-    log.info(`Stub GET handler for "${req.path}"`)
+    const error = (reason: string) => void res.status(400).send({ ErrorCode: -1, Reason: reason })
 
-    res.send('Placeholder handler')
+    const requiredProps: (keyof ApiDataTypes.Objects.TimeEntry)[] = [
+        'UserId',
+        'Start',
+        'End',
+        'LocationId',
+    ]
+
+    const optionalProps: (keyof ApiDataTypes.Objects.TimeEntry)[] = [
+        'GroupingId',
+        'TimeEntryTypeId',
+    ]
+
+    // @ts-expect-error Im using this to build the object
+    const entry: ApiDataTypes.Objects.TimeEntry = {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        CompanyId: res.locals.accessToken!.getPayloadField('cid'),
+    }
+
+    for(const field of requiredProps.concat(optionalProps))
+    {
+        if(!(field in req.body) || req.body[field] === null)
+        {
+            if(optionalProps.includes(field))
+                continue
+
+            return error(`Param "${field}" is required.`)
+        }
+
+        const value = Number.parseInt(req.body[field])
+        
+        if(Number.isNaN(value) || value < 1)
+            return error(`Param "${field}" is invalid.`)
+
+        switch(field)
+        {
+            case 'UserId':
+            case 'LocationId':
+            case 'GroupingId':
+            case 'TimeEntryTypeId':
+                entry[field] = value
+                break
+
+            case 'Start':
+            case 'End':
+                entry[field] = new Date(value)
+                break
+        }
+    }
+
+    if(entry.Start >= entry.End)
+        return error('Param "Start" cannot be on or after "End".')
+
+    if(entry.TimeEntryTypeId)
+    {
+        const result = await sql`
+            SELECT (
+                ${entry.TimeEntryTypeId} IN (
+                    SELECT
+                        Id
+                    FROM
+                        time_entry_types
+                    WHERE
+                        CompanyId = ${entry.CompanyId}
+                )
+            ) AS isAllowed
+        `
+
+        if(result[0].isAllowed !== 1)
+            return error('Param "TimeEntryTypeId" is invalid.')
+    }
+
+    entry.Duration   = entry.End.getTime() - entry.Start.getTime()
+    entry.MessageIds = []
+    
+    try
+    {
+        const result = await sql`
+            INSERT INTO
+                timeentries
+            SET
+                CompanyId       = ${entry.CompanyId},
+                UserId          = ${entry.UserId},
+                Start           = ${entry.Start},
+                End             = ${entry.End},
+                Duration        = ${entry.Duration},
+                GroupingId      = ${entry.GroupingId ?? null},
+                LocationId      = ${entry.LocationId},
+                TimeEntryTypeId = ${entry.TimeEntryTypeId ?? null}`
+    
+        entry.Id = result.insertId
+    
+        log.silly(`Time entry was created:\n${JSON.stringify(entry, null, 2)}`)
+    
+        res.status(201).send(entry)
+    }
+    catch(error)
+    {
+        log.error(`Failed to insert time entry: \nError:${JSON.stringify(error)}\nEntry: ${JSON.stringify(entry)}`)
+
+        res.sendStatus(500).end()
+    }
 })
 
+
+entry(router)
+messages(router)
 
 export default endpoint(router, {})

@@ -249,7 +249,7 @@ export default class Token
         return `${this.getEncodedHeader()}.${this.getEncodedPayload()}.${this.calculateSignature()}`
     }
 
-    public toTokenObject(): ResponseTypes.TokenObject
+    public toTokenObject(): ApiDataTypes.Objects.TokenObject
     {
         return {
             token:     this.toTokenString(),

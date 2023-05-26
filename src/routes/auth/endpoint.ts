@@ -62,7 +62,7 @@ router.post('/authenticate', async (req: Request, res: Response) =>
     const userId: number    = result[0].UserId
     const companyId: number = result[0].CompanyId
  
-    const response: ResponseTypes.AuthenticationResponse = {
+    const response: ApiDataTypes.Responses.AuthenticationResponse = {
         accessToken: Token.fromPayload({
             typ: 'access',
             uid: userId,
@@ -89,7 +89,7 @@ router.post('/refresh', (req: Request, res: Response) =>
             return
         }
 
-        const response: ResponseTypes.AuthenticationResponse = {
+        const response: ApiDataTypes.Responses.AuthenticationResponse = {
             accessToken: Token.fromPayload({
                 typ: 'access',
                 uid: token.getPayloadField('uid'),
