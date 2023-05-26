@@ -31,7 +31,10 @@ router.post('/authenticate', async (req: Request, res: Response) =>
 
     if(validated !== 2)
     {
-        res.sendStatus(400).end()
+        res.status(400).send({
+            code:   -1,
+            reason: '"Username" or "Password" is missing or invalid',
+        }).end()
         return
     }
 
@@ -49,7 +52,10 @@ router.post('/authenticate', async (req: Request, res: Response) =>
 
     if(!result.length)
     {
-        res.sendStatus(400).end()
+        res.status(400).send({
+            code:   -1,
+            reason: 'Invalid credentials',
+        }).end()
         return
     }
 
