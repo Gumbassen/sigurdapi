@@ -2,7 +2,6 @@
 import express, { Request, Response } from 'express'
 import nocache from 'nocache'
 import endpoint from '../../utils/endpoint'
-import log from './../../utils/logger'
 import { sql } from '../../utils/database'
 import Token, { TokenExpiredError, TokenInvalidError, TokenMissingError } from '../../utils/token'
 import intervalparser from '../../utils/intervalparser'
@@ -39,7 +38,8 @@ router.post('/authenticate', async (req: Request, res: Response) =>
     // FIXME: Add hashing to the passwords
     const result = await sql`
         SELECT
-            UserId
+            UserId,
+            CompanyId
         FROM
             user_logins
         WHERE
@@ -53,16 +53,19 @@ router.post('/authenticate', async (req: Request, res: Response) =>
         return
     }
 
-    const userId: number = result[0].UserId
+    const userId: number    = result[0].UserId
+    const companyId: number = result[0].CompanyId
  
     const response: ResponseTypes.AuthenticationResponse = {
         accessToken: Token.fromPayload({
             typ: 'access',
             uid: userId,
+            cid: companyId,
         }, ttlAccess).toTokenObject(),
         refreshToken: Token.fromPayload({
             typ: 'refresh',
             uid: userId,
+            cid: companyId,
         }, ttlRefresh).toTokenObject(),
     }
 
@@ -84,6 +87,7 @@ router.post('/refresh', (req: Request, res: Response) =>
             accessToken: Token.fromPayload({
                 typ: 'access',
                 uid: token.getPayloadField('uid'),
+                cid: token.getPayloadField('cid'),
             }).toTokenObject(),
             refreshToken: token.toTokenObject(),
         }

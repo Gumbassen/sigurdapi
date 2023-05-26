@@ -34,8 +34,10 @@ export default function(options: AuthMiddlewareOptions): RequestHandler
 
         try
         {
-            if(Token.fromRequest(req).verify())
+            const token = Token.fromRequest(req)
+            if(token.verify())
             {
+                res.locals.accessToken = token
                 next()
                 return
             }

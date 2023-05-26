@@ -94,5 +94,6 @@ Promise.all([
     })
 }).catch(errors =>
 {
-    log.error(`🚑 [SERVER] Failed to start...\n\t${errors.map(String).join('\n\t')}`)
+    const errorMessage = Array.isArray(errors) ? errors.map(String).join('\n\t') : String(errors)
+    log.error(`🚑 [SERVER] Failed to start...\n\t${errorMessage}`)
 })

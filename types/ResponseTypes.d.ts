@@ -11,5 +11,10 @@ declare namespace ResponseTypes {
         accessToken:  TokenObject
         refreshToken: TokenObject
     }
+
+    interface ErrorResponse {
+        ErrorCode?: number
+        Reason?: string
+    }
 }
 

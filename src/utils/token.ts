@@ -80,6 +80,9 @@ export interface TokenPayload
 
     /** User ID: The current users ID */
     uid: number
+
+    /** Company ID: The current users company ID */
+    cid: number
 }
 
 // The actual token class
