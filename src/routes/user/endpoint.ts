@@ -2,25 +2,21 @@
 import express, { Request, Response } from 'express'
 import endpoint from '../../utils/endpoint'
 import log from './../../utils/logger'
-import { sql } from '../../utils/database'
-
-import {
-    csNumberRow,
-    fetchCompany,
-    fetchFullUser,
-    fetchLocations,
-    fetchTimeEntryTypeCollections,
-    fetchUserRole,
-} from '../../utils/fetchfunctions'
+import { fetchFullUser, fetchUsers } from '../../utils/fetchfunctions'
 
 const router = express.Router()
 
 
-router.get('/', (req: Request, res: Response) =>
+router.get('/', async (req: Request, res: Response) =>
 {
-    const message = `Stub ${req.method} handler for "${req.baseUrl + req.url}"`
-    log.info(message)
-    res.send(message)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const token = res.locals.accessToken!
+
+    res.send(Array.from((await fetchUsers(
+        token.getPayloadField('cid'),
+        'CompanyId',
+        [token.getPayloadField('cid')],
+    )).values()))
 })
 
 

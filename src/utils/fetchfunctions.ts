@@ -7,7 +7,7 @@ export function csNumberRow(value: string): number[]
         .map(id => Number.parseInt(id))
 }
 
-export async function fetchUsers(companyId: number, field: 'Id' | 'UserRoleId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.User>>
+export async function fetchUsers(companyId: number, field: 'Id' | 'UserRoleId' | 'CompanyId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.User>>
 {
     const users = new Map<number, ApiDataTypes.Objects.User>()
 
@@ -50,8 +50,8 @@ export async function fetchUsers(companyId: number, field: 'Id' | 'UserRoleId', 
             ProfileImage:         row.ProfileImage ?? undefined,
             HiredDate:            row.HiredDate ?? undefined,
             FiredDate:            row.FiredDate ?? undefined,
-            LocationIds:          csNumberRow(row.LocationIds),
-            TimeTagCollectionIds: csNumberRow(row.TimeTagCollectionIds),
+            LocationIds:          csNumberRow(row.LocationIds ?? ''),
+            TimeTagCollectionIds: csNumberRow(row.TimeTagCollectionIds ?? ''),
         })
     }
 

@@ -7,3 +7,4 @@
  Mangler "fulfillsTag" og "fulfillsRule".
  - __POST__ /entry
  - __GET__ /user/current
+ - __GET__ /user
