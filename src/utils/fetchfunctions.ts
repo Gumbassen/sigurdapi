@@ -132,7 +132,7 @@ export async function fetchUserLocations(companyId: number, userIds: number[]): 
             l.CompanyId = ${companyId}
             AND l.Id IN (
                 SELECT
-                    LocationId
+                    xul.LocationId
                 FROM
                     x_user_locations AS xul
                 WHERE
@@ -153,6 +153,50 @@ export async function fetchUserLocations(companyId: number, userIds: number[]): 
     }
 
     return locations
+}
+
+/**
+ * Returned map is indexed by UserId, not UserRoleId.
+ */
+export async function fetchUserUserRoles(companyId: number, userIds: number[]): Promise<Map<number, ApiDataTypes.Objects.UserRole>>
+{
+    const roles = new Map<number, ApiDataTypes.Objects.UserRole>()
+
+    const results = await sql`
+        SELECT
+            u.Id                                    AS UserId,
+            ur.Id                                   AS Id,
+            ur.Name                                 AS Name,
+            ur.Description                          AS Description,
+            GROUP_CONCAT(xurp.UserRolePermissionId) AS PermissionIds
+        FROM
+            users AS u
+        LEFT JOIN user_roles AS ur ON
+            ur.CompanyId = u.CompanyId
+            AND ur.Id = u.UserRoleId
+        LEFT JOIN x_user_role_permissions AS xurp ON
+            xurp.UserRoleId = ur.Id
+        WHERE
+            u.CompanyId = ${companyId}
+            AND u.Id IN (${userIds})`
+
+    for(const row of results)
+    {
+        if(!row.UserId) continue
+
+        roles.set(row.UserId, {
+            Id:            row.Id,
+            CompanyId:     companyId,
+            Name:          row.Name,
+            Description:   row.Description ?? undefined,
+            PermissionIds: csNumberRow(row.PermissionIds ?? ''),
+        })
+    }
+
+    if(!roles.size)
+        throw new SQLNoResultError(`[CID=${companyId}] User "Id" IN ("${userIds.join('","')}") not found`)
+
+    return roles
 }
 
 export async function fetchLocations(companyId: number, field: 'Id', values: number[]): Promise<Map<number, ApiDataTypes.Objects.Location>>

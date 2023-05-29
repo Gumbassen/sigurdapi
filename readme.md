@@ -10,3 +10,4 @@
  - __GET__ /user
  - __GET__ /user/__:userId__
  - __GET__ /user/__:userId__/locations
+ - __GET__ /user/__:userId__/roles
