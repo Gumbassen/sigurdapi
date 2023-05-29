@@ -18,3 +18,4 @@
  Sender tomt array selvom der ikke findes et TimeTag med det givne ID.
  - __GET__ /timetag/__:timeTagId__/rules/__:ruleId__
  - __GET__ /location
+ - __GET__ /location/__:locationId__
