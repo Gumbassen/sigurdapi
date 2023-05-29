@@ -15,3 +15,5 @@
  - __GET__ /user/__:userId__/permissions
  - __GET__ /timetag
  - __GET__ /timetag/__:timeTagId__
+ - __GET__ /timetag/__:timeTagId__/rules  
+ Sender tomt array selvom der ikke findes et TimeTag med det givne ID.
