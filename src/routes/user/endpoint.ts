@@ -79,7 +79,7 @@ router.get('/:userId/locations', async (req: Request, res: Response) =>
     {
         res.send(Array.from((await fetchUserLocations(
             token.getPayloadField('cid'),
-            [token.getPayloadField('uid')],
+            [userId],
         )).values()))
     }
     catch(error)
