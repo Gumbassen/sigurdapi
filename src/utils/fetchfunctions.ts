@@ -538,3 +538,51 @@ export async function fetchTimetags(companyId: number, field: 'Id' | 'CompanyId'
 
     return tags
 }
+
+/**
+ * Returned map is indexed by LocationId, not UserId.
+ */
+export async function fetchLocationUsers(companyId: number, locationIds: number[]): Promise<Map<number, ApiDataTypes.Objects.User[]>>
+{
+    const results = await sql`
+        SELECT
+            l.Id                     AS Id,
+            GROUP_CONCAT(xul.UserId) AS UserIds
+        FROM
+            locations AS l
+        LEFT JOIN x_user_locations AS xul ON
+            xul.LocationId = l.Id
+        WHERE
+            l.CompanyId = ${companyId}
+            AND l.Id IN (${locationIds})
+        GROUP BY
+            l.Id`
+
+    if(!results.length)
+        throw new SQLNoResultError(`[CID=${companyId}] Location.Id IN (${locationIds.join(',')}) not found`)
+
+    const locations                                       = new Map<number, ApiDataTypes.Objects.User[]>()
+    const userIds: number[]                               = []
+    const userLocationLUT: { [UserId: number]: number[] } = {}
+    for(const row of results)
+    {
+        locations.set(row.Id, [])
+        for(const userId of csNumberRow(row.UserIds))
+        {
+            userIds.push(userId)
+            userLocationLUT[userId] ??= []
+            userLocationLUT[userId].push(row.Id)
+        }
+    }
+
+    for(const [ id, user ] of await fetchUsers(companyId, 'Id', userIds))
+    {
+        for(const locationId of userLocationLUT[id])
+        {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            locations.get(locationId)!.push(user)
+        }
+    }
+
+    return locations
+}

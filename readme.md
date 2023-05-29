@@ -19,3 +19,4 @@
  - __GET__ /timetag/__:timeTagId__/rules/__:ruleId__
  - __GET__ /location
  - __GET__ /location/__:locationId__
+ - __GET__ /location/__:locationId__/users
