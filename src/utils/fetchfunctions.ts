@@ -272,7 +272,7 @@ export async function fetchUserRolePermissions(companyId: number, field: 'UserId
     return perms
 }
 
-export async function fetchLocations(companyId: number, field: 'Id', values: number[]): Promise<Map<number, ApiDataTypes.Objects.Location>>
+export async function fetchLocations(companyId: number, field: 'Id' | 'CompanyId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.Location>>
 {
     const locations = new Map<number, ApiDataTypes.Objects.Location>()
 
