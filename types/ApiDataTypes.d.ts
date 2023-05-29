@@ -96,6 +96,12 @@ declare namespace ApiDataTypes {
             TimeTagCollections: TimeEntryTypeCollection[]
             Locations:          Location[]
         }
+
+        interface UserRolePermission {
+            Id:           number
+            Name:         string
+            Description?: string
+        }
     }
 
     declare namespace Responses {

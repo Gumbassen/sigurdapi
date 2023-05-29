@@ -3,8 +3,7 @@
 import express, { Request, Response } from 'express'
 import endpoint from '../../utils/endpoint'
 import log from './../../utils/logger'
-import database, { sql, unsafe } from '../../utils/database'
-const escape = database.connection.escape.bind(database.connection)
+import { sql, unsafe, escape } from '../../utils/database'
 
 const router = express.Router()
 

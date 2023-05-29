@@ -1,4 +1,4 @@
-import { sql, unsafe } from './database'
+import { sql, unsafe, escape } from './database'
 
 export class SQLNoResultError extends Error
 {
@@ -197,6 +197,79 @@ export async function fetchUserUserRoles(companyId: number, userIds: number[]): 
         throw new SQLNoResultError(`[CID=${companyId}] User "Id" IN ("${userIds.join('","')}") not found`)
 
     return roles
+}
+
+export async function fetchUserRolePermissions(companyId: number, field: 'UserId' | 'UserRoleId' | 'UserRolePermissionId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.UserRolePermission>>
+{
+    const perms = new Map<number, ApiDataTypes.Objects.UserRolePermission>()
+
+    let subquery: string
+    switch(field)
+    {
+        case 'UserId':
+            subquery = /* SQL */`
+                SELECT DISTINCT
+                    xurp.UserRolePermissionId
+                FROM
+                    x_user_role_permissions AS xurp
+                WHERE
+                    xurp.UserRoleId IN (
+                        SELECT DISTINCT
+                            u.UserRoleId
+                        FROM
+                            users AS u
+                        WHERE
+                            u.CompanyId = ${escape(companyId)}
+                            AND u.Id IN (${escape(values)})
+                    )`
+            break
+
+        case 'UserRoleId':
+            subquery = /* SQL */`
+                SELECT DISTINCT
+                    xurp.UserRolePermissionId
+                FROM
+                    x_user_role_permissions AS xurp
+                WHERE
+                    xurp.UserRoleId IN (
+                        SELECT DISTINCT
+                            ur.Id
+                        FROM
+                            user_roles AS ur
+                        WHERE
+                            ur.CompanyId = ${escape(companyId)}
+                            AND ur.Id IN (${escape(values)})
+                    )`
+            break
+
+        case 'UserRolePermissionId':
+            subquery = escape(values)
+            break
+    }
+
+    const results = await sql`
+        SELECT
+            urp.Id          AS Id,
+            urp.Name        AS Name,
+            urp.Description AS Description
+        FROM
+            user_role_permissions AS urp
+        WHERE
+            urp.Id IN (${unsafe(subquery)})`
+
+    if(!results.length)
+        throw new SQLNoResultError(`[CID=${companyId}] Field:"${field}" = (${values.join(',')}) not found`)
+
+    for(const row of results)
+    {
+        perms.set(row.Id, {
+            Id:          row.Id,
+            Name:        row.Name,
+            Description: row.Description ?? undefined,
+        })
+    }
+
+    return perms
 }
 
 export async function fetchLocations(companyId: number, field: 'Id', values: number[]): Promise<Map<number, ApiDataTypes.Objects.Location>>

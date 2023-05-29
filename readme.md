@@ -5,9 +5,11 @@
  - __POST__ /auth/refresh
  - __GET__ /entries  
  Mangler "fulfillsTag" og "fulfillsRule".
- - __POST__ /entry
+ - __POST__ /entry  
+ Fejl: Giver ikke en ordenlig fejlbesked, hvis foreign-key params indeholder værdier der ikke er i databasen.
  - __GET__ /user/current
  - __GET__ /user
  - __GET__ /user/__:userId__
  - __GET__ /user/__:userId__/locations
  - __GET__ /user/__:userId__/roles
+ - __GET__ /user/__:userId__/permissions

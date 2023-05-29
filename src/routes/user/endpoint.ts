@@ -7,6 +7,7 @@ import {
     fetchFullUser,
     fetchUser,
     fetchUserLocations,
+    fetchUserRolePermissions,
     fetchUserUserRoles,
     fetchUsers,
 } from '../../utils/fetchfunctions'
@@ -115,6 +116,36 @@ router.get('/:userId/roles', async (req: Request, res: Response) =>
     {
         res.send(Array.from((await fetchUserUserRoles(
             token.getPayloadField('cid'),
+            [userId],
+        )).values()))
+    }
+    catch(error)
+    {
+        if(!(error instanceof SQLNoResultError))
+            throw error
+
+        log.warn(`no user with id=${userId}`)
+        res.sendStatus(404)
+    }
+})
+
+router.get('/:userId/permissions', async (req: Request, res: Response) =>
+{
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const token  = res.locals.accessToken!
+    const userId = Number.parseInt(req.params.userId)
+
+    if(Number.isNaN(userId))
+    {
+        res.status(400).send('Invalid URL')
+        return
+    }
+
+    try
+    {
+        res.send(Array.from((await fetchUserRolePermissions(
+            token.getPayloadField('cid'),
+            'UserId',
             [userId],
         )).values()))
     }

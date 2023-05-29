@@ -104,6 +104,12 @@ export function unsafe(sql: string): UnsafeParameter
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function escape(value: any): string
+{
+    return connection.escape(value)
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function sql<TReturn = any>(strings: TemplateStringsArray, ...tags: any[]): Promise<TReturn>
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function sql<TReturn = any>(sql: string, ...values: any[]): Promise<TReturn>
@@ -167,4 +173,5 @@ export default {
     sql,
     unsafe,
     UnsafeParameter,
+    escape,
 }
