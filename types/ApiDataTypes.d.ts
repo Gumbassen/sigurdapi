@@ -57,6 +57,17 @@ declare namespace ApiDataTypes {
             RuleIds:     number[]
         }
 
+        enum TimeTagRuleWeekday {
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday',
+            'Sunday',
+            'Holiday',
+        }
+
         interface TimeTagRule {
             Id:        number
             CompanyId: number
@@ -68,6 +79,11 @@ declare namespace ApiDataTypes {
             /** Counted in seconds passed since midnight */
             ToTime:    number
             Amount:    number
+            Weekdays:  TimeTagRuleWeekday[]
+        }
+
+        interface FullTimeTag extends TimeTag {
+            Rules: TimeTagRule[]
         }
 
         interface TimeEntryTypeCollection {

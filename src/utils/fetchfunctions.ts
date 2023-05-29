@@ -453,3 +453,91 @@ export async function fetchFullUser(companyId: number, userId: number): Promise<
         TimeTagCollections:   Array.from((await fetchTimeEntryTypeCollections(companyId, 'Id', timeTagCollectionIds)).values()),
     }
 }
+
+export async function fetchTimeTagRules(companyId: number, field: 'Id' | 'TimeTagId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.TimeTagRule>>
+{
+    const rules = new Map<number, ApiDataTypes.Objects.TimeTagRule>()
+
+    const results = await sql`
+        SELECT
+            ttr.Id                      AS Id,
+            ttr.TimeTagId               AS TimeTagId,
+            ttr.Name                    AS Name,
+            ttr.Type                    AS Type,
+            ttr.FromTime                AS FromTime,
+            ttr.ToTime                  AS ToTime,
+            ttr.Amount                  AS Amount,
+            GROUP_CONCAT(xttrw.Weekday) AS Weekdays
+        FROM
+            timetag_rules AS ttr
+        LEFT JOIN x_timetag_rule_weekdays AS xttrw ON
+            xttrw.TimeTagRuleId = ttr.Id
+        WHERE
+            ttr.CompanyId = ${companyId}
+            AND ttr.${unsafe(field)} IN (${values})
+        GROUP BY
+            ttr.Id`
+
+    if(!results.length)
+        throw new SQLNoResultError(`[CID=${companyId}] TimeTagRule "${field}" IN (${values.join(',')}) not found`)
+
+    for(const row of results)
+    {
+        rules.set(row.Id, {
+            Id:        row.Id,
+            CompanyId: companyId,
+            TimeTagId: row.TimeTagId,
+            Name:      row.Name,
+            Type:      row.Type,
+            FromTime:  row.FromTime,
+            ToTime:    row.ToTime,
+            Amount:    row.Amount,
+            Weekdays:  row.Weekdays.split(',').filter((x: string) => x !== ''),
+        })
+    }
+
+    return rules
+}
+
+export async function fetchTimetags(companyId: number, field: 'Id' | 'CompanyId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.FullTimeTag>>
+{
+    const tags = new Map<number, ApiDataTypes.Objects.FullTimeTag>()
+
+    const results = await sql`
+        SELECT
+            tt.Id          AS Id,
+            tt.Name        AS Name,
+            tt.BasisType   AS BasisType,
+            tt.BasisAmount AS BasisAmount
+        FROM
+            timetags AS tt
+        WHERE
+            tt.CompanyId = ${companyId}
+            AND tt.${unsafe(field)} IN (${values})
+        GROUP BY
+            tt.Id`
+
+    const rulesByTimeTag: { [TimeTagId: ApiDataTypes.Objects.TimeTag['Id']]: ApiDataTypes.Objects.TimeTagRule[] } = {}
+    for(const [ , rule ] of await fetchTimeTagRules(companyId, 'TimeTagId', results.map((row: ApiDataTypes.Objects.TimeTag) => row.Id)))
+    {
+        rulesByTimeTag[rule.TimeTagId] ??= []
+        rulesByTimeTag[rule.TimeTagId].push(rule)
+    }
+
+    for(const row of results)
+    {
+        const rules = rulesByTimeTag[row.Id] ?? []
+
+        tags.set(row.Id, {
+            Id:          row.Id,
+            CompanyId:   companyId,
+            Name:        row.Name,
+            BasisType:   row.BasisType,
+            BasisAmount: row.BasisAmount,
+            RuleIds:     rules.map(({ Id }) => Id),
+            Rules:       rules,
+        })
+    }
+
+    return tags
+}

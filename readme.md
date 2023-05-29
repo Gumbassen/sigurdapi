@@ -13,3 +13,4 @@
  - __GET__ /user/__:userId__/locations
  - __GET__ /user/__:userId__/roles
  - __GET__ /user/__:userId__/permissions
+ - __GET__ /timetag
