@@ -156,7 +156,7 @@ export function sql<TReturn = any>(sqlParts: TemplateStringsArray | string | str
                 {
                     const message = `[MYSQL] Query failed (#${error.errno} ${error.code}): ${error.sqlMessage}`
                     log.error(`${message}\nSQL: ${error.sql}`)
-                    reject(message)
+                    reject(error)
                     return
                 }
                 resolve(results)

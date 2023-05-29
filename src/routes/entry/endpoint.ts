@@ -6,7 +6,7 @@ import log from './../../utils/logger'
 
 import entry from './entry'
 import messages from './messages'
-import { sql } from '../../utils/database'
+import { escape, sql, unsafe } from '../../utils/database'
 
 const router = express.Router()
 
@@ -68,23 +68,26 @@ router.post('/', async (req: Request, res: Response) =>
     if(entry.Start >= entry.End)
         return error('Param "Start" cannot be on or after "End".')
 
-    if(entry.TimeEntryTypeId)
-    {
-        const result = await sql`
-            SELECT (
-                ${entry.TimeEntryTypeId} IN (
-                    SELECT
-                        Id
-                    FROM
-                        time_entry_types
-                    WHERE
-                        CompanyId = ${entry.CompanyId}
-                )
-            ) AS isAllowed
-        `
 
-        if(result[0].isAllowed !== 1)
-            return error('Param "TimeEntryTypeId" is invalid.')
+    const permissionChecks = new Map<string, string>()
+    if(entry.LocationId)
+        permissionChecks.set('LocationId', `(${escape(entry.LocationId)} IN (SELECT Id FROM locations WHERE CompanyId = ${escape(entry.CompanyId)})) AS LocationId`)
+
+    if(entry.TimeEntryTypeId)
+        permissionChecks.set('TimeEntryTypeId', `(${escape(entry.TimeEntryTypeId)} IN (SELECT Id FROM time_entry_types WHERE CompanyId = ${escape(entry.CompanyId)})) AS TimeEntryTypeId`)
+
+    if(entry.UserId)
+        permissionChecks.set('UserId', `(${escape(entry.UserId)} IN (SELECT Id FROM users WHERE CompanyId = ${escape(entry.CompanyId)})) AS UserId`)
+
+    if(permissionChecks.size)
+    {
+        const result = await sql`SELECT ${unsafe(Array.from(permissionChecks.values()).join(','))}`
+
+        for(const prop of permissionChecks.keys())
+        {
+            if(result[0][prop] !== 1)
+                return error(`Param "${prop}" is invalid.`)
+        }
     }
 
     entry.StartDate  = new Date(entry.Start)
@@ -117,8 +120,7 @@ router.post('/', async (req: Request, res: Response) =>
     }
     catch(error)
     {
-        log.error(`Failed to insert time entry: \nError:${JSON.stringify(error)}\nEntry: ${JSON.stringify(entry)}`)
-
+        log.error(error)
         res.sendStatus(500).end()
     }
 })
