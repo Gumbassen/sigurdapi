@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 25, 2023 at 11:50 AM
+-- Generation Time: May 29, 2023 at 09:07 AM
 -- Server version: 10.4.10-MariaDB
 -- PHP Version: 7.4.33
 
@@ -240,6 +240,17 @@ CREATE TABLE `x_user_locations` (
   `LocationId` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `x_user_role_permissions`
+--
+
+CREATE TABLE `x_user_role_permissions` (
+  `UserRoleId` int(11) NOT NULL,
+  `UserRolePermissionId` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 --
 -- Indexes for dumped tables
 --
@@ -373,6 +384,12 @@ ALTER TABLE `x_time_entry_type_collection_timetags`
 --
 ALTER TABLE `x_user_locations`
   ADD PRIMARY KEY (`UserId`,`LocationId`);
+
+--
+-- Indexes for table `x_user_role_permissions`
+--
+ALTER TABLE `x_user_role_permissions`
+  ADD PRIMARY KEY (`UserRoleId`,`UserRolePermissionId`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -550,6 +567,13 @@ ALTER TABLE `x_time_entry_type_collection_timetags`
 ALTER TABLE `x_user_locations`
   ADD CONSTRAINT `x_user_locations_ibfk_1` FOREIGN KEY (`UserId`) REFERENCES `users` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `x_user_locations_ibfk_2` FOREIGN KEY (`LocationId`) REFERENCES `locations` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `x_user_role_permissions`
+--
+ALTER TABLE `x_user_role_permissions`
+  ADD CONSTRAINT `x_user_role_permissions_ibfk_1` FOREIGN KEY (`UserRoleId`) REFERENCES `user_roles` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `x_user_role_permissions_ibfk_2` FOREIGN KEY (`UserRolePermissionId`) REFERENCES `user_role_permissions` (`Id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
