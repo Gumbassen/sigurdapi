@@ -17,3 +17,4 @@
  - __GET__ /timetag/__:timeTagId__
  - __GET__ /timetag/__:timeTagId__/rules  
  Sender tomt array selvom der ikke findes et TimeTag med det givne ID.
+ - __GET__ /timetag/__:timeTagId__/rules/__:ruleId__

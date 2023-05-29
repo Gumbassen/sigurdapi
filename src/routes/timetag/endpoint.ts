@@ -65,5 +65,32 @@ router.get('/:timeTagId/rules', async (req: Request, res: Response) =>
     )).values()))
 })
 
+router.get('/:timeTagId/rules/:ruleId', async (req: Request, res: Response) =>
+{
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const token     = res.locals.accessToken!
+    const timetagId = Number.parseInt(req.params.timeTagId)
+    const ruleId    = Number.parseInt(req.params.ruleId)
+
+    if(Number.isNaN(timetagId) || Number.isNaN(ruleId))
+    {
+        res.status(400).send('Invalid URL')
+        return
+    }
+
+    const rules = await fetchTimeTagRules(
+        token.getPayloadField('cid'),
+        'TimeTagId',
+        [timetagId],
+    )
+
+    if(!rules.has(ruleId))
+    {
+        res.sendStatus(404)
+        return
+    }
+
+    res.send(rules.get(ruleId))
+})
 
 export default endpoint(router, {})
