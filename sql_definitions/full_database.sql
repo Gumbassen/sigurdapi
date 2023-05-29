@@ -92,7 +92,7 @@ CREATE TABLE `timetags` (
   `CompanyId` int(11) NOT NULL,
   `Name` text NOT NULL,
   `BasisType` text NOT NULL,
-  `BasisAmount` decimal(10,0) NOT NULL
+  `BasisAmount` decimal(10,3) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -109,7 +109,7 @@ CREATE TABLE `timetag_rules` (
   `Type` text NOT NULL,
   `FromTime` time NOT NULL,
   `ToTime` time NOT NULL,
-  `Amount` decimal(10,0) NOT NULL
+  `Amount` decimal(10,3) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
