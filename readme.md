@@ -20,3 +20,4 @@
  - __GET__ /location
  - __GET__ /location/__:locationId__
  - __GET__ /location/__:locationId__/users
+ - __GET__ /location/__:locationId__/leaders
