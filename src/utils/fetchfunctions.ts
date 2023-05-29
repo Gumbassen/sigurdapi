@@ -1,5 +1,13 @@
 import { sql, unsafe } from './database'
 
+export class SQLNoResultError extends Error
+{
+    constructor(message?: string)
+    {
+        super(message)
+    }
+}
+
 export function csNumberRow(value: string): number[]
 {
     return value.split(',')
@@ -56,6 +64,95 @@ export async function fetchUsers(companyId: number, field: 'Id' | 'UserRoleId' |
     }
 
     return users
+}
+
+export async function fetchUser(companyId: number, field: 'Id', value: number): Promise<ApiDataTypes.Objects.User>
+{
+    const result = await sql`
+        SELECT
+            u.Id                                                       AS Id,
+            u.UserRoleId                                               AS UserRoleId,
+            u.FullName                                                 AS FullName,
+            u.FirstName                                                AS FirstName,
+            u.MiddleName                                               AS MiddleName,
+            u.SurName                                                  AS SurName,
+            u.ProfileImage                                             AS ProfileImage,
+            IF(u.HiredDate IS NULL, NULL, UNIX_TIMESTAMP(u.HiredDate)) AS HiredDate,
+            IF(u.FiredDate IS NULL, NULL, UNIX_TIMESTAMP(u.FiredDate)) AS FiredDate,
+            GROUP_CONCAT(xul.LocationId)                               AS LocationIds,
+            GROUP_CONCAT(tetc.Id)                                      AS TimeTagCollectionIds
+        FROM
+            users AS u
+        LEFT JOIN x_user_locations AS xul ON
+            xul.UserId = u.Id
+        LEFT JOIN time_entry_type_collections AS tetc ON
+            tetc.CompanyId = u.CompanyId
+            AND tetc.UserId = u.Id
+        WHERE
+            u.CompanyId = ${companyId}
+            AND u.${unsafe(field)} = ${value}
+        GROUP BY
+            u.Id
+        LIMIT 1`
+
+    if(!result.length)
+        throw new SQLNoResultError(`[CID=${companyId}] User "${field}"="${value}" not found`)
+
+    return {
+        Id:                   result[0].Id,
+        CompanyId:            result[0].CompanyId,
+        UserRoleId:           result[0].UserRoleId,
+        FullName:             result[0].FullName,
+        FirstName:            result[0].FirstName,
+        MiddleName:           result[0].MiddleName ?? undefined,
+        SurName:              result[0].SurName,
+        ProfileImage:         result[0].ProfileImage ?? undefined,
+        HiredDate:            result[0].HiredDate ?? undefined,
+        FiredDate:            result[0].FiredDate ?? undefined,
+        LocationIds:          csNumberRow(result[0].LocationIds ?? ''),
+        TimeTagCollectionIds: csNumberRow(result[0].TimeTagCollectionIds ?? ''),
+    }
+}
+
+export async function fetchUserLocations(companyId: number, userIds: number[]): Promise<Map<number, ApiDataTypes.Objects.Location>>
+{
+    const locations = new Map<number, ApiDataTypes.Objects.Location>()
+
+    const results = await sql`
+        SELECT
+            l.Id AS Id,
+            l.Name AS Name,
+            l.Description AS Description,
+            GROUP_CONCAT(xll.UserId) AS LeaderIds
+        FROM
+            locations AS l
+        LEFT JOIN x_location_leaders AS xll ON
+            xll.LocationId = l.Id
+        WHERE
+            l.CompanyId = ${companyId}
+            AND l.Id IN (
+                SELECT
+                    LocationId
+                FROM
+                    x_user_locations AS xul
+                WHERE
+                    xul.UserId IN (${userIds})
+            )
+        GROUP BY
+            l.Id`
+
+    for(const row of results)
+    {
+        locations.set(row.Id, {
+            Id:          row.Id,
+            CompanyId:   companyId,
+            Name:        row.Name,
+            Description: row.Description ?? undefined,
+            LeaderIds:   csNumberRow(row.LeaderIds ?? ''),
+        })
+    }
+
+    return locations
 }
 
 export async function fetchLocations(companyId: number, field: 'Id', values: number[]): Promise<Map<number, ApiDataTypes.Objects.Location>>
@@ -213,6 +310,9 @@ export async function fetchFullUser(companyId: number, userId: number): Promise<
         GROUP BY
             u.Id
         LIMIT 1`
+
+    if(!result.length)
+        throw new SQLNoResultError(`[CID=${companyId}] User ID "${userId}" not found`)
 
     const locationIds          = csNumberRow(result[0].LocationIds ?? '')
     const timeTagCollectionIds = csNumberRow(result[0].TimeTagCollectionIds ?? '')

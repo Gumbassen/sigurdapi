@@ -8,3 +8,5 @@
  - __POST__ /entry
  - __GET__ /user/current
  - __GET__ /user
+ - __GET__ /user/__:userId__
+ - __GET__ /user/__:userId__/locations
