@@ -3,7 +3,7 @@
 import express, { Request, Response } from 'express'
 import endpoint from '../../utils/endpoint'
 import log from './../../utils/logger'
-import database, { sql } from '../../utils/database'
+import database, { sql, unsafe } from '../../utils/database'
 const escape = database.connection.escape.bind(database.connection)
 
 const router = express.Router()
@@ -47,7 +47,7 @@ router.get('/', async (req: Request, res: Response) =>
             return error('Param "location" must be omitted or contain one or more entries')
 
         numClauses++
-        queryClauses.push(`LocationId IN ('${locations.join('\',\'')}')`)
+        queryClauses.push(`LocationId IN (${escape(locations)})`)
     }
 
     if('user' in query)
@@ -70,7 +70,7 @@ router.get('/', async (req: Request, res: Response) =>
             return error('Param "user" must be omitted or contain one or more entries')
 
         numClauses++
-        queryClauses.push(`UserId IN ('${users.join('\',\'')}')`)
+        queryClauses.push(`UserId IN (${escape(users)})`)
     }
 
     if('group' in query)
@@ -93,7 +93,7 @@ router.get('/', async (req: Request, res: Response) =>
             return error('Param "group" must be omitted or contain one or more entries')
 
         numClauses++
-        queryClauses.push(`GroupingId IN ('${groupingIds.join('\',\'')}')`)
+        queryClauses.push(`GroupingId IN (${escape(groupingIds)})`)
     }
 
     if('type' in query)
@@ -116,7 +116,7 @@ router.get('/', async (req: Request, res: Response) =>
             return error('Param "type" must be omitted or contain one or more entries')
 
         numClauses++
-        queryClauses.push(`TimeEntryTypeId IN ('${typeIds.join('\',\'')}')`)
+        queryClauses.push(`TimeEntryTypeId IN (${escape(typeIds)})`)
     }
 
     if('before' in query)
@@ -130,7 +130,7 @@ router.get('/', async (req: Request, res: Response) =>
             return error('Param "before" is invalid')
 
         numClauses++
-        queryClauses.push(`Start <= ${escape(before)}`)
+        queryClauses.push(`UNIX_TIMESTAMP(Start) <= ${escape(before)}`)
     }
 
     if('after' in query)
@@ -144,7 +144,7 @@ router.get('/', async (req: Request, res: Response) =>
             return error('Param "after" is invalid')
 
         numClauses++
-        queryClauses.push(`End >= ${escape(after)}`)
+        queryClauses.push(`UNIX_TIMESTAMP(End) >= ${escape(after)}`)
     }
 
     const tagIds = []
@@ -203,8 +203,8 @@ router.get('/', async (req: Request, res: Response) =>
         return error('Param "fulfillsRule" is not implemented')
     }
 
-    const result = await sql(
-        `SELECT
+    const result = await sql`
+        SELECT
             Id,
             UserId,
             UNIX_TIMESTAMP(Start) AS 'Start',
@@ -217,8 +217,7 @@ router.get('/', async (req: Request, res: Response) =>
             timeentries
         WHERE
             CompanyId = ${escape(companyId)}
-            AND (${queryClauses.join(') AND (')})`,
-    )
+            AND (${unsafe(queryClauses.join(') AND ('))})`
 
     res.send(JSON.stringify(result))
 })
