@@ -478,9 +478,6 @@ export async function fetchTimeTagRules(companyId: number, field: 'Id' | 'TimeTa
         GROUP BY
             ttr.Id`
 
-    if(!results.length)
-        throw new SQLNoResultError(`[CID=${companyId}] TimeTagRule "${field}" IN (${values.join(',')}) not found`)
-
     for(const row of results)
     {
         rules.set(row.Id, {
