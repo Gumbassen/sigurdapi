@@ -429,7 +429,7 @@ export async function fetchTimeEntryTypeCollections(companyId: number, field: 'I
             tetc.CompanyId = ${companyId}
             AND tetc.${unsafe(field)} IN (${values})
         GROUP BY
-            xtetct.TimeEntryTypeCollectionId`
+            tetc.Id`
 
     for(const row of results)
     {
@@ -630,4 +630,37 @@ export async function fetchLocationUsers(companyId: number, locationIds: number[
     }
 
     return locations
+}
+
+export async function fetchFullTimeEntryTypeCollection(companyId: number, collectionId: number): Promise<ApiDataTypes.Objects.FullTimeEntryTypeCollection>
+{
+    const result = await sql`
+        SELECT
+            tetc.Id                        AS Id,
+            tetc.UserId                    AS UserId,
+            tetc.TimeEntryTypeId           AS TimeEntryTypeId,
+            GROUP_CONCAT(xtetct.TimeTagId) AS RuleIds
+        FROM
+            time_entry_type_collections AS tetc
+        LEFT JOIN x_time_entry_type_collection_timetags AS xtetct ON
+            xtetct.TimeEntryTypeCollectionId = tetc.Id
+        WHERE
+            tetc.CompanyId = ${companyId}
+            AND tetc.Id = ${collectionId}
+        GROUP BY
+            tetc.Id`
+
+    if(!result.length)
+        throw new SQLNoResultError(`[CID=${companyId}] TimeEntryTypeCollection: Id=${collectionId} not found`)
+
+    const ruleIds = csNumberRow(result[0].RuleIds ?? '')
+
+    return {
+        Id:              result[0].Id,
+        CompanyId:       companyId,
+        UserId:          result[0].UserId,
+        TimeEntryTypeId: result[0].TimeEntryTypeId,
+        RuleIds:         ruleIds,
+        Rules:           Array.from((await fetchTimetags(companyId, 'Id', ruleIds)).values()),
+    }
 }
