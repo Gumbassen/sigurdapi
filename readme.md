@@ -15,6 +15,7 @@
  - __GET__ /user/__{userId}__/tagcollections  
  Sender tomt array selvom der ikke findes en User med det givne ID.
  - __GET__ /user/__{userId}__/tagcollections/__{collectionId}__
+ - __DELETE__ /user/__{userId}__/tagcollections/__{collectionId}__
  - __GET__ /timetag
  - __GET__ /timetag/__{timeTagId}__
  - __GET__ /timetag/__{timeTagId}__/rules  
