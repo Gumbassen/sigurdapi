@@ -438,7 +438,7 @@ export async function fetchTimeEntryTypeCollections(companyId: number, field: 'I
             CompanyId:       companyId,
             UserId:          row.UserId,
             TimeEntryTypeId: row.TimeEntryTypeId,
-            RuleIds:         csNumberRow(row.RuleIds ?? ''),
+            TimeTagIds:         csNumberRow(row.RuleIds ?? ''),
         })
     }
 
@@ -660,7 +660,7 @@ export async function fetchFullTimeEntryTypeCollection(companyId: number, collec
         CompanyId:       companyId,
         UserId:          result[0].UserId,
         TimeEntryTypeId: result[0].TimeEntryTypeId,
-        RuleIds:         ruleIds,
-        Rules:           Array.from((await fetchTimetags(companyId, 'Id', ruleIds)).values()),
+        TimeTagIds:         ruleIds,
+        TimeTags:           Array.from((await fetchTimetags(companyId, 'Id', ruleIds)).values()),
     }
 }

@@ -91,11 +91,11 @@ declare namespace ApiDataTypes {
             CompanyId:       number
             UserId:          number
             TimeEntryTypeId: number
-            RuleIds:         number[]
+            TimeTagIds:      number[]
         }
 
         interface FullTimeEntryTypeCollection extends TimeEntryTypeCollection{
-            Rules: TimeTag[]
+            TimeTags: TimeTag[]
         }
 
         interface Location {
