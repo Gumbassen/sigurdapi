@@ -118,6 +118,10 @@ declare namespace ApiDataTypes {
             Name:         string
             Description?: string
         }
+
+        interface FullUserRole extends UserRole {
+            Permissions: UserRolePermission[]
+        }
     }
 
     declare namespace Responses {

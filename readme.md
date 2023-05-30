@@ -8,17 +8,18 @@
  - __POST__ /entry  
  - __GET__ /user/current
  - __GET__ /user
- - __GET__ /user/__:userId__
- - __GET__ /user/__:userId__/locations
- - __GET__ /user/__:userId__/roles
- - __GET__ /user/__:userId__/permissions
+ - __GET__ /user/__{userId}__
+ - __GET__ /user/__{userId}__/locations
+ - __GET__ /user/__{userId}__/roles
+ - __GET__ /user/__{userId}__/permissions
  - __GET__ /timetag
- - __GET__ /timetag/__:timeTagId__
- - __GET__ /timetag/__:timeTagId__/rules  
+ - __GET__ /timetag/__{timeTagId}__
+ - __GET__ /timetag/__{timeTagId}__/rules  
  Sender tomt array selvom der ikke findes et TimeTag med det givne ID.
- - __GET__ /timetag/__:timeTagId__/rules/__:ruleId__
+ - __GET__ /timetag/__{timeTagId}__/rules/__{ruleId}__
  - __GET__ /location
- - __GET__ /location/__:locationId__
- - __GET__ /location/__:locationId__/users
- - __GET__ /location/__:locationId__/leaders
+ - __GET__ /location/__{locationId}__
+ - __GET__ /location/__{locationId}__/users
+ - __GET__ /location/__{locationId}__/leaders
  - __GET__ /role
+ - __GET__ /role/__{roleId}__

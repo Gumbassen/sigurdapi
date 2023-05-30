@@ -362,8 +362,30 @@ export async function fetchUserRoles(companyId: number, field: 'Id' | 'CompanyId
 
 export async function fetchUserRole(companyId: number, userRoleId: number): Promise<ApiDataTypes.Objects.UserRole>
 {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return (await fetchUserRoles(companyId, 'Id', [userRoleId])).get(userRoleId)!
+    return fetchUserRoles(companyId, 'Id', [userRoleId]).then(roles => roles.get(userRoleId)!)
+}
+
+export async function fetchFullUserRole(companyId: number, userRoleId: number): Promise<ApiDataTypes.Objects.FullUserRole>
+{
+    const roles = await fetchUserRoles(companyId, 'Id', [userRoleId])
+
+    if(!roles.has(userRoleId))
+        throw new SQLNoResultError(`[CID=${companyId}] UserRole Id=${userRoleId} not found`)
+
+    const role = roles.get(userRoleId)! as ApiDataTypes.Objects.FullUserRole
+    role.Permissions = []
+
+    try
+    {
+        role.Permissions = Array.from((await fetchUserRolePermissions(companyId, 'UserRoleId', [userRoleId])).values())
+    }
+    catch(error)
+    {
+        if(!(error instanceof SQLNoResultError))
+            throw error
+    }
+
+    return role
 }
 
 export async function fetchTimeEntryTypeCollections(companyId: number, field: 'Id' | 'UserId' | 'TimeEntryTypeId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.TimeEntryTypeCollection>>
