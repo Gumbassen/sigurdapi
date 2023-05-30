@@ -452,7 +452,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/TimeTag"
+                    "$ref": "#/components/schemas/TimeEntryTypeCollection"
                   }
                 }
               }
@@ -529,6 +529,54 @@
             "$ref": "#/components/responses/UniqueValueError"
           }
         }
+      }
+    },
+    "/user/{userId}/tagcollections/{collectionId}": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Returns a specific tag collections",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "The ID of the user",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "collectionId",
+            "in": "path",
+            "description": "The ID of the tag collection",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeEntryTypeCollection"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
       },
       "delete": {
         "tags": [
@@ -540,6 +588,16 @@
             "name": "userId",
             "in": "path",
             "description": "The ID of the user",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "collectionId",
+            "in": "path",
+            "description": "The ID of the tag collection",
             "required": true,
             "schema": {
               "type": "integer",
@@ -820,7 +878,7 @@
         "tags": [
           "entry"
         ],
-        "summary": "Deletes a time-etnry",
+        "summary": "Deletes a time-entry",
         "parameters": [
           {
             "name": "entryId",
@@ -1939,7 +1997,7 @@
         "tags": [
           "role"
         ],
-        "summary": "Returns all possible user-role permissions",
+        "summary": "Returns a permission",
         "parameters": [
           {
             "name": "permissionId",
