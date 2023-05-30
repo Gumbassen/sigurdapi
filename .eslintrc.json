@@ -64,7 +64,13 @@
             "after": true
         }],
         "brace-style": ["error", "allman"],
-        "comma-dangle": ["error", "always-multiline"],
+        "comma-dangle": ["error", {
+            "arrays":    "always-multiline",
+            "objects":   "always-multiline",
+            "imports":   "only-multiline",
+            "exports":   "only-multiline",
+            "functions": "only-multiline"
+        }],
         "comma-spacing": "error",
         "dot-location": ["error", "property"],
         "eol-last": ["error", "always"],
