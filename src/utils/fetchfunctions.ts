@@ -23,6 +23,79 @@ function collapseClauses(clauses: string[]): string
     return ` AND ${clauses.join(' AND ')}`
 }
 
+
+export async function fetchTimeEntries(
+    companyId: number,
+    options: ({
+        field: 'Id' | 'UserId' | 'TimeEntryTypeId' | 'GroupingId',
+        value: number[]
+    } | {
+        field: 'Before' | 'After',
+        value: Date
+    })[]
+): Promise<Map<number, ApiDataTypes.Objects.TimeEntry>>
+{
+    const clauses: string[] = []
+    for(const option of options)
+    {
+        switch(option.field)
+        {
+            case 'Id':
+            case 'UserId':
+            case 'TimeEntryTypeId':
+            case 'GroupingId':
+                clauses.push(/*SQL*/`te.${option.field} IN (${escape(option.value)})`)
+                break
+
+            case 'Before':
+                clauses.push(/*SQL*/`te.Start >= ${escape(option.value)}`)
+                break
+
+            case 'After':
+                clauses.push(/*SQL*/`te.End <= ${escape(option.value)}`)
+                break
+        }
+    }
+
+    const results = await sql`
+        SELECT
+            te.Id                    AS Id,
+            te.UserId                AS UserId,
+            UNIX_TIMESTAMP(te.Start) AS Start,
+            UNIX_TIMESTAMP(te.End)   AS End,
+            te.Duration              AS Duration,
+            te.GroupingId            AS GroupingId,
+            te.LocationId            AS LocationId,
+            te.TimeEntryTypeId       AS TimeEntryTypeId,
+            GROUP_CONCAT(tem.Id)     AS MessageIds
+        FROM
+            timeentries AS te
+        LEFT JOIN timeentry_messages AS tem ON
+            tem.TimeEntryId = te.Id
+        WHERE
+            te.CompanyId = ${companyId}
+            ${unsafe(collapseClauses(clauses))}`
+
+    const entries = new Map<number, ApiDataTypes.Objects.TimeEntry>()
+    for(const row of results)
+    {
+        entries.set(row.Id, {
+            Id:              row.Id,
+            CompanyId:       companyId,
+            UserId:          row.UserId,
+            Start:           row.Start,
+            End:             row.End,
+            Duration:        row.Duration,
+            GroupingId:      row.GroupingId ?? undefined,
+            LocationId:      row.locationId,
+            TimeEntryTypeId: row.TimeEntryTypeId ?? undefined,
+            MessageIds:      csNumberRow(row.MessageIds ?? ''),
+        })
+    }
+
+    return entries
+}
+
 export async function fetchUsers(companyId: number): Promise<Map<number, ApiDataTypes.Objects.User>>
 export async function fetchUsers(companyId: number, field: 'Id' | 'UserRoleId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.User>>
 export async function fetchUsers(companyId: number, field: 'Id' | 'UserRoleId' | 'None' = 'None', values?: number[]): Promise<Map<number, ApiDataTypes.Objects.User>>

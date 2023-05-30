@@ -94,9 +94,7 @@ function initialize(): Promise<unknown[]>
 
 export class UnsafeParameter
 {
-    private value: string
-
-    public constructor(value: string)
+    public constructor(private readonly value: string)
     {
         this.value = value
     }
@@ -111,9 +109,7 @@ export class EscapedParameter<T>
 {
     static escapeWith: Connection = connections.single
 
-    private value: T
-
-    public constructor(value: T)
+    public constructor(private readonly value: T)
     {
         this.value = value
     }

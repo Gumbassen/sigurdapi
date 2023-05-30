@@ -6,6 +6,7 @@
  - __GET__ /entries  
  Mangler "fulfillsTag" og "fulfillsRule".
  - __POST__ /entry
+ - __GET__ /entry/__{entryId}__
  - __GET__ /entry/__{entryId}__/messages  
  Sender tomt array selvom der ikke findes en User med det givne ID.
  - __POST__ /entry/__{entryId}__/messages
