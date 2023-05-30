@@ -1,15 +1,13 @@
-
 import express, { Request, Response } from 'express'
 import endpoint from '../../utils/endpoint'
-import log from './../../utils/logger'
 import { fetchTimeTagRules, fetchTimetags } from '../../utils/fetchfunctions'
+import { error } from '../../utils/common'
 
 const router = express.Router()
 
 
 router.get('/', async (req: Request, res: Response) =>
 {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token = res.locals.accessToken!
 
     res.send(Array.from((await fetchTimetags(
@@ -21,15 +19,11 @@ router.get('/', async (req: Request, res: Response) =>
 
 router.get('/:timeTagId', async (req: Request, res: Response) =>
 {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token     = res.locals.accessToken!
     const timetagId = Number.parseInt(req.params.timeTagId)
 
     if(Number.isNaN(timetagId))
-    {
-        res.status(400).send('Invalid URL')
-        return
-    }
+        return error(res, 400, 'Invalid URL')
 
     const timetags = await fetchTimetags(
         token.getPayloadField('cid'),
@@ -38,25 +32,18 @@ router.get('/:timeTagId', async (req: Request, res: Response) =>
     )
 
     if(!timetags.has(timetagId))
-    {
-        res.sendStatus(404)
-        return
-    }
+        return error(res, 404, 'Timetag not found')
 
     res.send(timetags.get(timetagId))
 })
 
 router.get('/:timeTagId/rules', async (req: Request, res: Response) =>
 {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token     = res.locals.accessToken!
     const timetagId = Number.parseInt(req.params.timeTagId)
 
     if(Number.isNaN(timetagId))
-    {
-        res.status(400).send('Invalid URL')
-        return
-    }
+        return error(res, 400, 'Invalid URL')
 
     res.send(Array.from((await fetchTimeTagRules(
         token.getPayloadField('cid'),
@@ -67,16 +54,12 @@ router.get('/:timeTagId/rules', async (req: Request, res: Response) =>
 
 router.get('/:timeTagId/rules/:ruleId', async (req: Request, res: Response) =>
 {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token     = res.locals.accessToken!
     const timetagId = Number.parseInt(req.params.timeTagId)
     const ruleId    = Number.parseInt(req.params.ruleId)
 
     if(Number.isNaN(timetagId) || Number.isNaN(ruleId))
-    {
-        res.status(400).send('Invalid URL')
-        return
-    }
+        return error(res, 400, 'Invalid URL')
 
     const rules = await fetchTimeTagRules(
         token.getPayloadField('cid'),
@@ -85,10 +68,7 @@ router.get('/:timeTagId/rules/:ruleId', async (req: Request, res: Response) =>
     )
 
     if(!rules.has(ruleId))
-    {
-        res.sendStatus(404)
-        return
-    }
+        return error(res, 404, 'Rule not found')
 
     res.send(rules.get(ruleId))
 })

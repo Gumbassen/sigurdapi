@@ -1,12 +1,10 @@
-/* eslint-disable consistent-return */
-
 import express, { Request, Response } from 'express'
 import endpoint from '../../utils/endpoint'
 import log from './../../utils/logger'
-
 import entry from './entry'
 import messages from './messages'
 import { escape, sql, unsafe } from '../../utils/database'
+import { error } from '../../utils/common'
 
 const router = express.Router()
 
@@ -17,8 +15,6 @@ interface TimeEntryWithDates extends ApiDataTypes.Objects.TimeEntry {
 
 router.post('/', async (req: Request, res: Response) =>
 {
-    const error = (reason: string) => void res.status(400).send({ ErrorCode: -1, Reason: reason })
-
     const requiredProps: (keyof ApiDataTypes.Objects.TimeEntry)[] = [
         'UserId',
         'Start',
@@ -33,7 +29,6 @@ router.post('/', async (req: Request, res: Response) =>
 
     // @ts-expect-error Im using this to build the object
     const entry: TimeEntryWithDates = {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         CompanyId: res.locals.accessToken!.getPayloadField('cid'),
     }
 
@@ -44,13 +39,13 @@ router.post('/', async (req: Request, res: Response) =>
             if(optionalProps.includes(field))
                 continue
 
-            return error(`Param "${field}" is required.`)
+            return error(res, 400, `Param "${field}" is required.`)
         }
 
         const value = Number.parseInt(req.body[field])
         
         if(Number.isNaN(value) || value < 1)
-            return error(`Param "${field}" is invalid.`)
+            return error(res, 400, `Param "${field}" is invalid.`)
 
         switch(field)
         {
@@ -66,7 +61,7 @@ router.post('/', async (req: Request, res: Response) =>
     }
 
     if(entry.Start >= entry.End)
-        return error('Param "Start" cannot be on or after "End".')
+        return error(res, 400, 'Param "Start" cannot be on or after "End".')
 
 
     const permissionChecks = new Map<string, string>()
@@ -86,7 +81,7 @@ router.post('/', async (req: Request, res: Response) =>
         for(const prop of permissionChecks.keys())
         {
             if(result[0][prop] !== 1)
-                return error(`Param "${prop}" is invalid.`)
+                return error(res, 400, `Param "${prop}" is invalid.`)
         }
     }
 
@@ -118,10 +113,10 @@ router.post('/', async (req: Request, res: Response) =>
     
         res.status(201).send(entry)
     }
-    catch(error)
+    catch(_error)
     {
-        log.error(error)
-        res.sendStatus(500).end()
+        log.error(_error)
+        error(res, 500, 'Unknown error')
     }
 })
 

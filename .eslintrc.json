@@ -42,7 +42,7 @@
         "arrow-body-style": ["error", "as-needed"],
         "camelcase": "warn",
         "capitalized-comments": "warn",
-        "consistent-return": "error",
+        "consistent-return": "off",
         "curly": ["error", "multi-or-nest", "consistent"],
         "dot-notation": "warn",
         "no-console": "error",
@@ -98,6 +98,7 @@
             "error",
             "never"
         ],
-        "space-infix-ops": "error"
+        "space-infix-ops": "error",
+        "@typescript-eslint/no-non-null-assertion": "off"
     }
 }

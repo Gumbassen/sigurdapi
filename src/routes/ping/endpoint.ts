@@ -1,7 +1,6 @@
 
 import express, { Request, Response } from 'express'
 import endpoint from '../../utils/endpoint'
-import log from './../../utils/logger'
 
 const router = express.Router()
 

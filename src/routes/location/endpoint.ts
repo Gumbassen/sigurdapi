@@ -1,17 +1,15 @@
-/* eslint-disable consistent-return */
-
 import express, { Request, Response } from 'express'
 import endpoint from '../../utils/endpoint'
 import log from './../../utils/logger'
 import { fetchLocationUsers, fetchLocations, fetchUsers } from '../../utils/fetchfunctions'
 import { escape, sql, unsafe } from '../../utils/database'
+import { error } from '../../utils/common'
 
 const router = express.Router()
 
 
 router.get('/', async (req: Request, res: Response) =>
 {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token = res.locals.accessToken!
 
     res.send(Array.from((await fetchLocations(
@@ -23,9 +21,6 @@ router.get('/', async (req: Request, res: Response) =>
 
 router.post('/', async (req: Request, res: Response) =>
 {
-    const error = (reason: string, code?: number) => void res.status(400).send({ ErrorCode: code ?? -1, Reason: reason })
-    
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token = res.locals.accessToken!
 
     const requiredProps: (keyof ApiDataTypes.Objects.Location)[] = ['Name']
@@ -48,7 +43,7 @@ router.post('/', async (req: Request, res: Response) =>
             if(optionalProps.includes(field))
                 continue
 
-            return error(`Param "${field}" is required.`)
+            return error(res, 400, `Param "${field}" is required.`)
         }
 
         const value = req.body[field]
@@ -57,12 +52,12 @@ router.post('/', async (req: Request, res: Response) =>
             case 'Name':
             case 'Description':
                 if(typeof value !== 'string')
-                    return error(`Param "${field}" must be a string.`)
+                    return error(res, 400, `Param "${field}" must be a string.`)
 
                 if(!value.length)
                 {
                     if(optionalProps.includes(field)) break
-                    return error(`Param "${field}" cannot be empty.`)
+                    return error(res, 400, `Param "${field}" cannot be empty.`)
                 }
 
                 entry[field] = value
@@ -70,7 +65,7 @@ router.post('/', async (req: Request, res: Response) =>
 
             case 'LeaderIds':
                 if(!Array.isArray(value))
-                    return error(`Param "${field}" must be an array.`)
+                    return error(res, 400, `Param "${field}" must be an array.`)
 
                 if(!value.length)
                     break
@@ -78,7 +73,7 @@ router.post('/', async (req: Request, res: Response) =>
                 for(const id of value.map(id => Number.parseInt(id, 10)))
                 {
                     if(Number.isNaN(id))
-                        return error(`Param "${field}" contains invalid entries.`)
+                        return error(res, 400, `Param "${field}" contains invalid entries.`)
 
                     if(entry.LeaderIds.includes(id))
                         continue
@@ -101,7 +96,7 @@ router.post('/', async (req: Request, res: Response) =>
         for(const prop of permissionChecks.keys())
         {
             if(result[0][prop] !== 1)
-                return error(`Param "${prop}" is invalid.`)
+                return error(res, 400, `Param "${prop}" is invalid.`)
         }
     }
     
@@ -134,24 +129,20 @@ router.post('/', async (req: Request, res: Response) =>
 
         res.status(201).send(entry)
     }
-    catch(error)
+    catch(_error)
     {
-        log.error(error)
-        res.sendStatus(500).end()
+        log.error(_error)
+        error(res, 500, 'Unknown error')
     }
 })
 
 router.get('/:locationId', async (req: Request, res: Response) =>
 {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token      = res.locals.accessToken!
     const locationId = Number.parseInt(req.params.locationId)
 
     if(Number.isNaN(locationId))
-    {
-        res.status(400).send('Invalid URL')
-        return
-    }
+        return error(res, 400, 'Invalid URL')
 
     const locations = await fetchLocations(
         token.getPayloadField('cid'),
@@ -160,25 +151,18 @@ router.get('/:locationId', async (req: Request, res: Response) =>
     )
 
     if(!locations.has(locationId))
-    {
-        res.sendStatus(404)
-        return
-    }
+        return error(res, 404, 'Location not found')
 
     res.send(locations.get(locationId))
 })
 
 router.get('/:locationId/users', async (req: Request, res: Response) =>
 {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token      = res.locals.accessToken!
     const locationId = Number.parseInt(req.params.locationId)
 
     if(Number.isNaN(locationId))
-    {
-        res.status(400).send('Invalid URL')
-        return
-    }
+        return error(res, 400, 'Invalid URL')
 
     const usersByLocation = await fetchLocationUsers(
         token.getPayloadField('cid'),
@@ -186,25 +170,18 @@ router.get('/:locationId/users', async (req: Request, res: Response) =>
     )
 
     if(!usersByLocation.has(locationId))
-    {
-        res.sendStatus(404)
-        return
-    }
+        return error(res, 404, 'Location not found')
 
     res.send(usersByLocation.get(locationId))
 })
 
 router.get('/:locationId/leaders', async (req: Request, res: Response) =>
 {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token      = res.locals.accessToken!
     const locationId = Number.parseInt(req.params.locationId)
 
     if(Number.isNaN(locationId))
-    {
-        res.status(400).send('Invalid URL')
-        return
-    }
+        return error(res, 400, 'Invalid URL')
 
     const locations = await fetchLocations(
         token.getPayloadField('cid'),
@@ -213,15 +190,11 @@ router.get('/:locationId/leaders', async (req: Request, res: Response) =>
     )
 
     if(!locations.has(locationId))
-    {
-        res.sendStatus(404)
-        return
-    }
+        return error(res, 404, 'Location not found')
 
     res.send(Array.from((await fetchUsers(
         token.getPayloadField('cid'),
         'Id',
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         locations.get(locationId)!.LeaderIds,
     )).values()))
 })

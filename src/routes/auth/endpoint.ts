@@ -1,10 +1,10 @@
-
 import express, { Request, Response } from 'express'
 import nocache from 'nocache'
 import endpoint from '../../utils/endpoint'
 import { sql } from '../../utils/database'
 import Token, { TokenExpiredError, TokenInvalidError, TokenMissingError } from '../../utils/token'
 import intervalparser from '../../utils/intervalparser'
+import { error, unauthorized } from '../../utils/common'
 
 const router = express.Router()
 router.use(nocache())
@@ -30,13 +30,7 @@ router.post('/authenticate', async (req: Request, res: Response) =>
     }
 
     if(validated !== 2)
-    {
-        res.status(400).send({
-            code:   -1,
-            reason: '"Username" or "Password" is missing or invalid',
-        }).end()
-        return
-    }
+        return error(res, 400, '"Username" or "Password" is missing or invalid')
 
     // FIXME: Add hashing to the passwords
     const result = await sql`
@@ -51,13 +45,7 @@ router.post('/authenticate', async (req: Request, res: Response) =>
         LIMIT 1`
 
     if(!result.length)
-    {
-        res.status(400).send({
-            code:   -1,
-            reason: 'Invalid credentials',
-        }).end()
-        return
-    }
+        return error(res, 400, 'Invalid credentials')
 
     const userId: number    = result[0].UserId
     const companyId: number = result[0].CompanyId
@@ -84,10 +72,7 @@ router.post('/refresh', (req: Request, res: Response) =>
     {
         const token = Token.fromRequest(req)
         if(!token.verify() || token.getPayloadField('typ') !== 'refresh')
-        {
-            res.sendStatus(401).end()
-            return
-        }
+            return unauthorized(res)
 
         const response: ApiDataTypes.Responses.AuthenticationResponse = {
             accessToken: Token.fromPayload({
@@ -103,10 +88,7 @@ router.post('/refresh', (req: Request, res: Response) =>
     catch(error)
     {
         if([ TokenMissingError, TokenExpiredError, TokenInvalidError ].some(type => error instanceof type))
-        {
-            res.sendStatus(401).end()
-            return
-        }
+            return unauthorized(res)
 
         throw error
     }

@@ -11,13 +11,13 @@ import {
     fetchUserUserRoles,
     fetchUsers,
 } from '../../utils/fetchfunctions'
+import { error } from '../../utils/common'
 
 const router = express.Router()
 
 
 router.get('/', async (req: Request, res: Response) =>
 {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token = res.locals.accessToken!
 
     res.send(Array.from((await fetchUsers(
@@ -32,7 +32,6 @@ router.get('/', async (req: Request, res: Response) =>
 // Must be added before the '/:userId' handler, otherwise the other one takes priority
 router.get('/current', async (req: Request, res: Response) =>
 {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token = res.locals.accessToken!
 
     res.send(await fetchFullUser(
@@ -43,15 +42,11 @@ router.get('/current', async (req: Request, res: Response) =>
 
 router.get('/:userId', async (req: Request, res: Response) =>
 {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token  = res.locals.accessToken!
     const userId = Number.parseInt(req.params.userId)
 
     if(Number.isNaN(userId))
-    {
-        res.status(400).send('Invalid URL')
-        return
-    }
+        return error(res, 400, 'Invalid URL')
 
     try
     {
@@ -61,27 +56,23 @@ router.get('/:userId', async (req: Request, res: Response) =>
             userId,
         ))
     }
-    catch(error)
+    catch(_error)
     {
-        if(!(error instanceof SQLNoResultError))
-            throw error
+        if(!(_error instanceof SQLNoResultError))
+            throw _error
 
         log.warn(`no user with id=${userId}`)
-        res.sendStatus(404)
+        error(res, 404, 'User not found')
     }
 })
 
 router.get('/:userId/locations', async (req: Request, res: Response) =>
 {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token  = res.locals.accessToken!
     const userId = Number.parseInt(req.params.userId)
 
     if(Number.isNaN(userId))
-    {
-        res.status(400).send('Invalid URL')
-        return
-    }
+        return error(res, 400, 'Invalid URL')
 
     try
     {
@@ -90,27 +81,23 @@ router.get('/:userId/locations', async (req: Request, res: Response) =>
             [userId],
         )).values()))
     }
-    catch(error)
+    catch(_error)
     {
-        if(!(error instanceof SQLNoResultError))
-            throw error
+        if(!(_error instanceof SQLNoResultError))
+            throw _error
 
         log.warn(`no user with id=${userId}`)
-        res.sendStatus(404)
+        error(res, 404, 'User not found')
     }
 })
 
 router.get('/:userId/roles', async (req: Request, res: Response) =>
 {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token  = res.locals.accessToken!
     const userId = Number.parseInt(req.params.userId)
 
     if(Number.isNaN(userId))
-    {
-        res.status(400).send('Invalid URL')
-        return
-    }
+        return error(res, 400, 'Invalid URL')
 
     try
     {
@@ -119,27 +106,23 @@ router.get('/:userId/roles', async (req: Request, res: Response) =>
             [userId],
         )).values()))
     }
-    catch(error)
+    catch(_error)
     {
-        if(!(error instanceof SQLNoResultError))
-            throw error
+        if(!(_error instanceof SQLNoResultError))
+            throw _error
 
         log.warn(`no user with id=${userId}`)
-        res.sendStatus(404)
+        error(res, 404, 'User not found')
     }
 })
 
 router.get('/:userId/permissions', async (req: Request, res: Response) =>
 {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const token  = res.locals.accessToken!
     const userId = Number.parseInt(req.params.userId)
 
     if(Number.isNaN(userId))
-    {
-        res.status(400).send('Invalid URL')
-        return
-    }
+        return error(res, 400, 'Invalid URL')
 
     try
     {
@@ -149,13 +132,13 @@ router.get('/:userId/permissions', async (req: Request, res: Response) =>
             [userId],
         )).values()))
     }
-    catch(error)
+    catch(_error)
     {
-        if(!(error instanceof SQLNoResultError))
-            throw error
+        if(!(_error instanceof SQLNoResultError))
+            throw _error
 
         log.warn(`no user with id=${userId}`)
-        res.sendStatus(404)
+        error(res, 404, 'User not found')
     }
 })
 

@@ -6,6 +6,7 @@ declare global {
         export interface Locals {
             db: Connection
             accessToken?: Token
+            refreshToken?: Token
         }
     }
 }
