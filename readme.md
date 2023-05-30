@@ -11,6 +11,7 @@
  - __POST__ /entry/__{entryId}__/messages
  - __GET__ /user/current
  - __GET__ /user
+ - __POST__ /user
  - __GET__ /user/__{userId}__
  - __GET__ /user/__{userId}__/locations
  - __GET__ /user/__{userId}__/roles
