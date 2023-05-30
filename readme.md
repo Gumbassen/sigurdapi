@@ -23,3 +23,4 @@
  - __GET__ /location/__{locationId}__/leaders
  - __GET__ /role
  - __GET__ /role/__{roleId}__
+ - __GET__ /role/__{roleId}__/permission
