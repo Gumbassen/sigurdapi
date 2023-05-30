@@ -222,7 +222,7 @@ export async function fetchAllUserRolePermissions(): Promise<Map<number, ApiData
     return perms
 }
 
-export async function fetchUserRolePermissions(companyId: number, field: 'UserId' | 'UserRoleId' | 'UserRolePermissionId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.UserRolePermission>>
+export async function fetchUserRolePermissions(companyId: number, field: 'UserId' | 'UserRoleId' | 'PermissionId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.UserRolePermission>>
 {
     const perms = new Map<number, ApiDataTypes.Objects.UserRolePermission>()
 
@@ -265,7 +265,7 @@ export async function fetchUserRolePermissions(companyId: number, field: 'UserId
                     )`
             break
 
-        case 'UserRolePermissionId':
+        case 'PermissionId':
             subquery = escape(values)
             break
     }
