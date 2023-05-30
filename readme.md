@@ -21,3 +21,4 @@
  - __GET__ /location/__:locationId__
  - __GET__ /location/__:locationId__/users
  - __GET__ /location/__:locationId__/leaders
+ - __GET__ /role

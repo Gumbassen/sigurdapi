@@ -326,7 +326,7 @@ export async function fetchCompany(companyId: number): Promise<ApiDataTypes.Obje
     }
 }
 
-export async function fetchUserRoles(companyId: number, field: 'Id', values: number[]): Promise<Map<number, ApiDataTypes.Objects.UserRole>>
+export async function fetchUserRoles(companyId: number, field: 'Id' | 'CompanyId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.UserRole>>
 {
     const roles = new Map<number, ApiDataTypes.Objects.UserRole>()
 

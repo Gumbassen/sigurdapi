@@ -2,15 +2,20 @@
 import express, { Request, Response } from 'express'
 import endpoint from '../../utils/endpoint'
 import log from './../../utils/logger'
+import { fetchUserRoles } from '../../utils/fetchfunctions'
 
 const router = express.Router()
 
-
-router.get('/', (req: Request, res: Response) =>
+router.get('/', async (req: Request, res: Response) =>
 {
-    log.info(`Stub GET handler for "${req.path}"`)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const token = res.locals.accessToken!
 
-    res.send('Placeholder handler')
+    res.send(Array.from((await fetchUserRoles(
+        token.getPayloadField('cid'),
+        'CompanyId',
+        [token.getPayloadField('cid')],
+    )).values()))
 })
 
 
