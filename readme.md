@@ -12,6 +12,8 @@
  - __GET__ /user/__{userId}__/locations
  - __GET__ /user/__{userId}__/roles
  - __GET__ /user/__{userId}__/permissions
+ - __GET__ /user/__{userId}__/tagcollections  
+ Sender tomt array selvom der ikke findes en User med det givne ID.
  - __GET__ /timetag
  - __GET__ /timetag/__{timeTagId}__
  - __GET__ /timetag/__{timeTagId}__/rules  

@@ -5,6 +5,7 @@ import log from './../../utils/logger'
 import {
     SQLNoResultError,
     fetchFullUser,
+    fetchTimeEntryTypeCollections,
     fetchUser,
     fetchUserLocations,
     fetchUserRolePermissions,
@@ -140,6 +141,21 @@ router.get('/:userId/permissions', async (req: Request, res: Response) =>
         log.warn(`no user with id=${userId}`)
         error(res, 404, 'User not found')
     }
+})
+
+router.get('/:userId/tagcollections', async (req: Request, res: Response) =>
+{
+    const token  = res.locals.accessToken!
+    const userId = Number.parseInt(req.params.userId)
+
+    if(Number.isNaN(userId))
+        return error(res, 400, 'Invalid URL')
+
+    res.send(Array.from((await fetchTimeEntryTypeCollections(
+        token.getPayloadField('cid'),
+        'UserId',
+        [userId]
+    )).values()))
 })
 
 export default endpoint(router, {})
