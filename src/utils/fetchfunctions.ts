@@ -199,6 +199,29 @@ export async function fetchUserUserRoles(companyId: number, userIds: number[]): 
     return roles
 }
 
+export async function fetchAllUserRolePermissions(): Promise<Map<number, ApiDataTypes.Objects.UserRolePermission>>
+{
+    const results = await sql`
+        SELECT
+            Id,
+            Name,
+            Description
+        FROM
+            user_role_permissions`
+
+    const perms = new Map<number, ApiDataTypes.Objects.UserRolePermission>()
+    for(const row of results)
+    {
+        perms.set(row.Id, {
+            Id:          row.Id,
+            Name:        row.Name,
+            Description: row.Description ?? undefined,
+        })
+    }
+
+    return perms
+}
+
 export async function fetchUserRolePermissions(companyId: number, field: 'UserId' | 'UserRoleId' | 'UserRolePermissionId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.UserRolePermission>>
 {
     const perms = new Map<number, ApiDataTypes.Objects.UserRolePermission>()
