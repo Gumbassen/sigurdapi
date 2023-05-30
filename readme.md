@@ -34,3 +34,7 @@
  - __GET__ /role/__{roleId}__/permission
  - __GET__ /roles/permission
  - __GET__ /roles/permission/__{permissionId}__
+
+# OBS!
+Mange POST-requests er ikke beskrevet ordenligt i swagger.  
+F.eks. giver det ikke mening at man skal angive et ID når man opretter en Location.
