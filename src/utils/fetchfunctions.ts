@@ -35,10 +35,18 @@ export async function fetchUsers(companyId: number, field: 'Id' | 'UserRoleId' |
     {
         case 'Id':
         case 'UserRoleId':
+            if(!Array.isArray(values))
+                throw new Error('values must be an array')
+
+            if(!values.length)
+                return new Map()
+
             clauses.push(/*SQL*/`u.${field} IN (${escape(values)})`)
             break
 
         case 'None':
+            if(typeof values !== 'undefined')
+                throw new Error('values must be undefined')
             break
     }
 
@@ -327,10 +335,18 @@ export async function fetchLocations(companyId: number, field: 'Id' | 'None' = '
     switch(field)
     {
         case 'Id':
+            if(!Array.isArray(values))
+                throw new Error('values must be an array')
+
+            if(!values.length)
+                return new Map()
+
             clauses.push(/*SQL*/`l.${field} IN (${escape(values)})`)
             break
 
         case 'None':
+            if(typeof values !== 'undefined')
+                throw new Error('values must be undefined')
             break
     }
 
@@ -396,10 +412,18 @@ export async function fetchUserRoles(companyId: number, field: 'Id' | 'None' = '
     switch(field)
     {
         case 'Id':
+            if(!Array.isArray(values))
+                throw new Error('values must be an array')
+
+            if(!values.length)
+                return new Map()
+
             clauses.push(/*SQL*/`ur.${field} IN (${escape(values)})`)
             break
 
         case 'None':
+            if(typeof values !== 'undefined')
+                throw new Error('values must be undefined')
             break
     }
 
@@ -601,10 +625,18 @@ export async function fetchTimetags(companyId: number, field: 'Id' | 'None' = 'N
     switch(field)
     {
         case 'Id':
+            if(!Array.isArray(values))
+                throw new Error('values must be an array')
+
+            if(!values.length)
+                return new Map()
+
             clauses.push(/*SQL*/`tt.${field} IN (${escape(values)})`)
             break
 
         case 'None':
+            if(typeof values !== 'undefined')
+                throw new Error('values must be undefined')
             break
     }
 
