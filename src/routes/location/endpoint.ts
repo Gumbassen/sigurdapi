@@ -13,9 +13,7 @@ router.get('/', async (req: Request, res: Response) =>
     const token = res.locals.accessToken!
 
     res.send(Array.from((await fetchLocations(
-        token.getPayloadField('cid'),
-        'CompanyId',
-        [token.getPayloadField('cid')],
+        token.getPayloadField('cid')
     )).values()))
 })
 

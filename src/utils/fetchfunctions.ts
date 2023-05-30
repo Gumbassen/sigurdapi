@@ -15,9 +15,32 @@ export function csNumberRow(value: string): number[]
         .map(id => Number.parseInt(id))
 }
 
-export async function fetchUsers(companyId: number, field: 'Id' | 'UserRoleId' | 'CompanyId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.User>>
+function collapseClauses(clauses: string[]): string
 {
-    const users = new Map<number, ApiDataTypes.Objects.User>()
+    if(!clauses.length)
+        return ''
+
+    return ` AND ${clauses.join(' AND ')}`
+}
+
+export async function fetchUsers(companyId: number): Promise<Map<number, ApiDataTypes.Objects.User>>
+export async function fetchUsers(companyId: number, field: 'Id' | 'UserRoleId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.User>>
+export async function fetchUsers(companyId: number, field: 'Id' | 'UserRoleId' | 'None' = 'None', values?: number[]): Promise<Map<number, ApiDataTypes.Objects.User>>
+{
+    if(field !== 'None' && typeof values === 'undefined')
+        throw new Error('Invalid parameters. "values" is required if "field" isnt "None"')
+
+    const clauses: string[] = []
+    switch(field)
+    {
+        case 'Id':
+        case 'UserRoleId':
+            clauses.push(/*SQL*/`u.${field} IN (${escape(values)})`)
+            break
+
+        case 'None':
+            break
+    }
 
     const results = await sql`
         SELECT
@@ -41,10 +64,11 @@ export async function fetchUsers(companyId: number, field: 'Id' | 'UserRoleId' |
             AND tetc.UserId = u.Id
         WHERE
             u.CompanyId = ${companyId}
-            AND u.${unsafe(field)} IN (${values})
+            ${unsafe(collapseClauses(clauses))}
         GROUP BY
             u.Id`
 
+    const users = new Map<number, ApiDataTypes.Objects.User>()
     for(const row of results)
     {
         users.set(row.Id, {
@@ -116,8 +140,6 @@ export async function fetchUser(companyId: number, field: 'Id', value: number): 
 
 export async function fetchUserLocations(companyId: number, userIds: number[]): Promise<Map<number, ApiDataTypes.Objects.Location>>
 {
-    const locations = new Map<number, ApiDataTypes.Objects.Location>()
-
     const results = await sql`
         SELECT
             l.Id AS Id,
@@ -141,6 +163,7 @@ export async function fetchUserLocations(companyId: number, userIds: number[]): 
         GROUP BY
             l.Id`
 
+    const locations = new Map<number, ApiDataTypes.Objects.Location>()
     for(const row of results)
     {
         locations.set(row.Id, {
@@ -160,8 +183,6 @@ export async function fetchUserLocations(companyId: number, userIds: number[]): 
  */
 export async function fetchUserUserRoles(companyId: number, userIds: number[]): Promise<Map<number, ApiDataTypes.Objects.UserRole>>
 {
-    const roles = new Map<number, ApiDataTypes.Objects.UserRole>()
-
     const results = await sql`
         SELECT
             u.Id                                    AS UserId,
@@ -180,6 +201,7 @@ export async function fetchUserUserRoles(companyId: number, userIds: number[]): 
             u.CompanyId = ${companyId}
             AND u.Id IN (${userIds})`
 
+    const roles = new Map<number, ApiDataTypes.Objects.UserRole>()
     for(const row of results)
     {
         if(!row.UserId) continue
@@ -224,8 +246,6 @@ export async function fetchAllUserRolePermissions(): Promise<Map<number, ApiData
 
 export async function fetchUserRolePermissions(companyId: number, field: 'UserId' | 'UserRoleId' | 'PermissionId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.UserRolePermission>>
 {
-    const perms = new Map<number, ApiDataTypes.Objects.UserRolePermission>()
-
     let subquery: string
     switch(field)
     {
@@ -283,6 +303,7 @@ export async function fetchUserRolePermissions(companyId: number, field: 'UserId
     if(!results.length)
         throw new SQLNoResultError(`[CID=${companyId}] Field:"${field}" = (${values.join(',')}) not found`)
 
+    const perms = new Map<number, ApiDataTypes.Objects.UserRolePermission>()
     for(const row of results)
     {
         perms.set(row.Id, {
@@ -295,9 +316,23 @@ export async function fetchUserRolePermissions(companyId: number, field: 'UserId
     return perms
 }
 
-export async function fetchLocations(companyId: number, field: 'Id' | 'CompanyId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.Location>>
+export async function fetchLocations(companyId: number): Promise<Map<number, ApiDataTypes.Objects.Location>>
+export async function fetchLocations(companyId: number, field: 'Id', values: number[]): Promise<Map<number, ApiDataTypes.Objects.Location>>
+export async function fetchLocations(companyId: number, field: 'Id' | 'None' = 'None', values?: number[]): Promise<Map<number, ApiDataTypes.Objects.Location>>
 {
-    const locations = new Map<number, ApiDataTypes.Objects.Location>()
+    if(field !== 'None' && typeof values === 'undefined')
+        throw new Error('Invalid parameters. "values" is required if "field" isnt "None"')
+
+    const clauses: string[] = []
+    switch(field)
+    {
+        case 'Id':
+            clauses.push(/*SQL*/`l.${field} IN (${escape(values)})`)
+            break
+
+        case 'None':
+            break
+    }
 
     const results = await sql`
         SELECT
@@ -311,10 +346,11 @@ export async function fetchLocations(companyId: number, field: 'Id' | 'CompanyId
             xll.LocationId = l.Id
         WHERE
             l.CompanyId = ${companyId}
-            AND l.${unsafe(field)} IN (${values})
+            ${unsafe(collapseClauses(clauses))}
         GROUP BY
             l.Id`
 
+    const locations = new Map<number, ApiDataTypes.Objects.Location>()
     for(const row of results)
     {
         locations.set(row.Id, {
@@ -349,9 +385,23 @@ export async function fetchCompany(companyId: number): Promise<ApiDataTypes.Obje
     }
 }
 
-export async function fetchUserRoles(companyId: number, field: 'Id' | 'CompanyId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.UserRole>>
+export async function fetchUserRoles(companyId: number): Promise<Map<number, ApiDataTypes.Objects.UserRole>>
+export async function fetchUserRoles(companyId: number, field: 'Id', values: number[]): Promise<Map<number, ApiDataTypes.Objects.UserRole>>
+export async function fetchUserRoles(companyId: number, field: 'Id' | 'None' = 'None', values?: number[]): Promise<Map<number, ApiDataTypes.Objects.UserRole>>
 {
-    const roles = new Map<number, ApiDataTypes.Objects.UserRole>()
+    if(field !== 'None' && typeof values === 'undefined')
+        throw new Error('Invalid parameters. "values" is required if "field" isnt "None"')
+
+    const clauses: string[] = []
+    switch(field)
+    {
+        case 'Id':
+            clauses.push(/*SQL*/`ur.${field} IN (${escape(values)})`)
+            break
+
+        case 'None':
+            break
+    }
 
     const results = await sql`
         SELECT
@@ -365,10 +415,11 @@ export async function fetchUserRoles(companyId: number, field: 'Id' | 'CompanyId
             xurp.UserRoleId = ur.Id
         WHERE
             ur.CompanyId = ${companyId}
-            AND ur.${unsafe(field)} IN (${values})
+            ${unsafe(collapseClauses(clauses))}
         GROUP BY
             xurp.UserRoleId`
 
+    const roles = new Map<number, ApiDataTypes.Objects.UserRole>()
     for(const row of results)
     {
         roles.set(row.Id, {
@@ -413,8 +464,6 @@ export async function fetchFullUserRole(companyId: number, userRoleId: number): 
 
 export async function fetchTimeEntryTypeCollections(companyId: number, field: 'Id' | 'UserId' | 'TimeEntryTypeId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.TimeEntryTypeCollection>>
 {
-    const collections = new Map<number, ApiDataTypes.Objects.TimeEntryTypeCollection>()
-
     const results = await sql`
         SELECT
             tetc.Id                        AS Id,
@@ -431,6 +480,7 @@ export async function fetchTimeEntryTypeCollections(companyId: number, field: 'I
         GROUP BY
             tetc.Id`
 
+    const collections = new Map<number, ApiDataTypes.Objects.TimeEntryTypeCollection>()
     for(const row of results)
     {
         collections.set(row.Id, {
@@ -499,10 +549,8 @@ export async function fetchFullUser(companyId: number, userId: number): Promise<
     }
 }
 
-export async function fetchTimeTagRules(companyId: number, field: 'Id' | 'TimeTagId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.TimeTagRule>>
+export async function fetchTimetagRules(companyId: number, field: 'Id' | 'TimeTagId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.TimetagRule>>
 {
-    const rules = new Map<number, ApiDataTypes.Objects.TimeTagRule>()
-
     const results = await sql`
         SELECT
             ttr.Id                      AS Id,
@@ -523,6 +571,7 @@ export async function fetchTimeTagRules(companyId: number, field: 'Id' | 'TimeTa
         GROUP BY
             ttr.Id`
 
+    const rules = new Map<number, ApiDataTypes.Objects.TimetagRule>()
     for(const row of results)
     {
         rules.set(row.Id, {
@@ -541,9 +590,23 @@ export async function fetchTimeTagRules(companyId: number, field: 'Id' | 'TimeTa
     return rules
 }
 
-export async function fetchTimetags(companyId: number, field: 'Id' | 'CompanyId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.FullTimeTag>>
+export async function fetchTimetags(companyId: number): Promise<Map<number, ApiDataTypes.Objects.FullTimetag>>
+export async function fetchTimetags(companyId: number, field: 'Id', values: number[]): Promise<Map<number, ApiDataTypes.Objects.FullTimetag>>
+export async function fetchTimetags(companyId: number, field: 'Id' | 'None' = 'None', values?: number[]): Promise<Map<number, ApiDataTypes.Objects.FullTimetag>>
 {
-    const tags = new Map<number, ApiDataTypes.Objects.FullTimeTag>()
+    if(field !== 'None' && typeof values === 'undefined')
+        throw new Error('Invalid parameters. "values" is required if "field" isnt "None"')
+
+    const clauses: string[] = []
+    switch(field)
+    {
+        case 'Id':
+            clauses.push(/*SQL*/`tt.${field} IN (${escape(values)})`)
+            break
+
+        case 'None':
+            break
+    }
 
     const results = await sql`
         SELECT
@@ -555,17 +618,18 @@ export async function fetchTimetags(companyId: number, field: 'Id' | 'CompanyId'
             timetags AS tt
         WHERE
             tt.CompanyId = ${companyId}
-            AND tt.${unsafe(field)} IN (${values})
+            ${unsafe(collapseClauses(clauses))}
         GROUP BY
             tt.Id`
 
-    const rulesByTimeTag: { [TimeTagId: ApiDataTypes.Objects.TimeTag['Id']]: ApiDataTypes.Objects.TimeTagRule[] } = {}
-    for(const [ , rule ] of await fetchTimeTagRules(companyId, 'TimeTagId', results.map((row: ApiDataTypes.Objects.TimeTag) => row.Id)))
+    const rulesByTimeTag: { [TimeTagId: ApiDataTypes.Objects.Timetag['Id']]: ApiDataTypes.Objects.TimetagRule[] } = {}
+    for(const [ , rule ] of await fetchTimetagRules(companyId, 'TimeTagId', results.map((row: ApiDataTypes.Objects.Timetag) => row.Id)))
     {
         rulesByTimeTag[rule.TimeTagId] ??= []
         rulesByTimeTag[rule.TimeTagId].push(rule)
     }
 
+    const tags = new Map<number, ApiDataTypes.Objects.FullTimetag>()
     for(const row of results)
     {
         const rules = rulesByTimeTag[row.Id] ?? []

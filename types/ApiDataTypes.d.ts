@@ -20,6 +20,15 @@ declare namespace ApiDataTypes {
             TimeEntryTypeId?: number
         }
 
+        interface TimeEntryMessage {
+            Id:          number
+            CompanyId:   number
+            UserId:      number
+            TimeEntryId: number
+            CreatedAt:   number
+            Message:     string
+        }
+
         interface User {
             Id:                   number
             CompanyId:            number
@@ -48,7 +57,7 @@ declare namespace ApiDataTypes {
             PermissionIds: number[]
         }
 
-        interface TimeTag {
+        interface Timetag {
             Id:          number
             CompanyId:   number
             Name:        string
@@ -57,7 +66,7 @@ declare namespace ApiDataTypes {
             RuleIds:     number[]
         }
 
-        enum TimeTagRuleWeekday {
+        enum TimetagRuleWeekday {
             'Monday',
             'Tuesday',
             'Wednesday',
@@ -68,7 +77,7 @@ declare namespace ApiDataTypes {
             'Holiday',
         }
 
-        interface TimeTagRule {
+        interface TimetagRule {
             Id:        number
             CompanyId: number
             TimeTagId: number
@@ -79,11 +88,11 @@ declare namespace ApiDataTypes {
             /** Counted in seconds passed since midnight */
             ToTime:    number
             Amount:    number
-            Weekdays:  TimeTagRuleWeekday[]
+            Weekdays:  TimetagRuleWeekday[]
         }
 
-        interface FullTimeTag extends TimeTag {
-            Rules: TimeTagRule[]
+        interface FullTimetag extends Timetag {
+            Rules: TimetagRule[]
         }
 
         interface TimeEntryTypeCollection {
@@ -95,7 +104,7 @@ declare namespace ApiDataTypes {
         }
 
         interface FullTimeEntryTypeCollection extends TimeEntryTypeCollection{
-            TimeTags: TimeTag[]
+            TimeTags: Timetag[]
         }
 
         interface Location {

@@ -17,7 +17,6 @@ for(const field of allowed)
 {
     const envName = `MYSQL_${field.toUpperCase()}`
     if(!(envName in process.env)) continue
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const raw = process.env[envName]!
 
     let value
@@ -142,7 +141,6 @@ export function sql<TReturn = any>(sqlParts: TemplateStringsArray | string | str
         preparedSql.push('?')
         preparedValues.push(value)
     }
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     preparedSql.push(sqlParts.at(-1)!)
 
     return new Promise((resolve, reject) =>

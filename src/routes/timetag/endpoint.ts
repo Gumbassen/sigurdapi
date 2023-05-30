@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express'
 import endpoint from '../../utils/endpoint'
-import { fetchTimeTagRules, fetchTimetags } from '../../utils/fetchfunctions'
+import { fetchTimetagRules, fetchTimetags } from '../../utils/fetchfunctions'
 import { error } from '../../utils/common'
 
 const router = express.Router()
@@ -11,9 +11,7 @@ router.get('/', async (req: Request, res: Response) =>
     const token = res.locals.accessToken!
 
     res.send(Array.from((await fetchTimetags(
-        token.getPayloadField('cid'),
-        'CompanyId',
-        [token.getPayloadField('cid')],
+        token.getPayloadField('cid')
     )).values()))
 })
 
@@ -45,7 +43,7 @@ router.get('/:timeTagId/rules', async (req: Request, res: Response) =>
     if(Number.isNaN(timetagId))
         return error(res, 400, 'Invalid URL')
 
-    res.send(Array.from((await fetchTimeTagRules(
+    res.send(Array.from((await fetchTimetagRules(
         token.getPayloadField('cid'),
         'TimeTagId',
         [timetagId],
@@ -61,7 +59,7 @@ router.get('/:timeTagId/rules/:ruleId', async (req: Request, res: Response) =>
     if(Number.isNaN(timetagId) || Number.isNaN(ruleId))
         return error(res, 400, 'Invalid URL')
 
-    const rules = await fetchTimeTagRules(
+    const rules = await fetchTimetagRules(
         token.getPayloadField('cid'),
         'TimeTagId',
         [timetagId],
