@@ -13,6 +13,7 @@
  - __GET__ /user
  - __POST__ /user
  - __GET__ /user/__{userId}__
+ - __DELETE__ /user/__{userId}__
  - __GET__ /user/__{userId}__/locations
  - __GET__ /user/__{userId}__/roles
  - __GET__ /user/__{userId}__/permissions
