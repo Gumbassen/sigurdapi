@@ -1,6 +1,8 @@
-import mysql, { ConnectionConfig } from 'mysql'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import mysql, { Connection, ConnectionConfig } from 'mysql'
 import { Response, NextFunction, RequestHandler } from 'express'
 import log from './logger'
+import { error } from './common'
 
 const allowed: (keyof ConnectionConfig)[] = [
     'host',
@@ -34,51 +36,59 @@ for(const field of allowed)
             value = Number.parseInt(raw)
             if(Number.isNaN(value)) value = 3306
             break
-
-        case 'multipleStatements':
-            value = raw !== '0'
-            break
     }
 
     // @ts-expect-error ts(2322)
     config[field] = value
 }
 
-const connection = mysql.createConnection(config)
+export interface ConnectionStore {
+    single: Connection
+    multi:  Connection
+}
+
+const connections: ConnectionStore = {
+    single: mysql.createConnection(Object.assign({}, config, { multipleStatements: false })),
+    multi:  mysql.createConnection(Object.assign({}, config, { multipleStatements: true })),
+}
 
 function middleware(): RequestHandler
 {
     return function(_, res: Response, next: NextFunction)
     {
-        if(![ 'connected', 'authenticated' ].includes(connection.state))
+        for(const name in connections)
         {
-            log.error(`Invalid MySQL connection state "${connection.state}"`)
-            res.status(500).send('MySQL has left the lobby.').end()
-            return
+            const connection = connections[name as keyof ConnectionStore]
+
+            if(![ 'connected', 'authenticated' ].includes(connection.state))
+            {
+                log.error(`Invalid MySQL connection state "${connection.state}" for the "${name}" connection`)
+                return error(res, 500, 'MySQL has left the lobby.')
+            }
         }
 
-        res.locals.db = connection
         next()
     }
 }
 
-let connectPromise: Promise<undefined> | null = null
-function connect(): Promise<undefined>
+let connectPromise: Promise<unknown[]> | null = null
+function initialize(): Promise<unknown[]>
 {
-    connectPromise ??= new Promise((resolve, reject) =>
+    connectPromise ??= Promise.all(Object.entries(connections).map(([ name, connection ]) => new Promise((resolve, reject) =>
     {
-        connection.connect(err =>
+        connection.connect((err: any) =>
         {
             if(err)
             {
-                reject(`[MYSQL] Connection failed (#${err.errno} ${err.code}): ${err.sqlMessage}`)
+                reject(`[MYSQL] Connection "${name}" failed (#${err.errno} ${err.code}): ${err.sqlMessage}`)
                 return
             }
-    
-            log.info('⚡ [MYSQL] Connected!')
+
+            log.info(`⚡ [MYSQL] Connected "${name}"!`)
             resolve(undefined)
         })
-    })
+    })))
+
     return connectPromise
 }
 
@@ -97,57 +107,94 @@ export class UnsafeParameter
     }
 }
 
+export class EscapedParameter<T>
+{
+    static escapeWith: Connection = connections.single
+
+    private value: T
+
+    public constructor(value: T)
+    {
+        this.value = value
+    }
+
+    public getValue(): T
+    {
+        return this.value
+    }
+
+    public toString(): string // No other way to maintain backwards compatability without refactoring how queries is made throughout the whole codebase
+    {
+        return EscapedParameter.escapeWith.escape(this.getValue())
+    }
+}
+
 export function unsafe(sql: string): UnsafeParameter
 {
     return new UnsafeParameter(sql)
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function escape(value: any): string
+export function escape<T = any>(value: T): EscapedParameter<T>
 {
-    return connection.escape(value)
+    return new EscapedParameter<T>(value)
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function sql<TReturn = any>(strings: TemplateStringsArray, ...tags: any[]): Promise<TReturn>
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function sql<TReturn = any>(sql: string, ...values: any[]): Promise<TReturn>
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function sql<TReturn = any>(sqlParts: TemplateStringsArray | string | string[], ...values: any[]): Promise<TReturn>
+interface PreparedQuery {
+    sql:    string
+    values: any[]
+}
+
+function prepareQuery(parts: string | string[] | TemplateStringsArray, values: any[]): PreparedQuery
 {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const preparedValues: any[] = []
-    const preparedSql: string[] = []
+    if(typeof parts === 'string') // Easy way to handle funky calls
+        return prepareQuery([ parts, '' ], values)
+
+    if(!values.length)
+    {
+        return {
+            sql:    parts.join(''),
+            values: [],
+        }
+    }
+
+    const preppedVals: any[]   = []
+    const preppedSql: string[] = []
     for(let i = 0; i < values.length; i++)
     {
         const value = values[i]
-        const sql   = sqlParts[i]
+        const sql   = parts[i]
+
         if(value instanceof UnsafeParameter)
         {
-            preparedSql.push(sql)
-            preparedSql.push(value.getValue())
+            preppedSql.push(sql)
+            preppedSql.push(value.getValue())
             continue
         }
 
-        if(Array.isArray(value) && !value.length)
+        preppedSql.push(sql)
+        preppedSql.push('?')
+        if(value instanceof EscapedParameter)
         {
-            preparedSql.push(sql)
-            preparedSql.push('?')
-            preparedValues.push('')
+            preppedVals.push(value.getValue())
             continue
         }
-
-        preparedSql.push(sql)
-        preparedSql.push('?')
-        preparedValues.push(value)
+        preppedVals.push(value)
     }
-    preparedSql.push(sqlParts.at(-1)!)
+    preppedSql.push(parts.at(-1)!)
 
-    return new Promise((resolve, reject) =>
+    return {
+        sql:    preppedSql.join(''),
+        values: preppedVals,
+    }
+}
+
+function runQuery<T = any>(connection: Connection, { sql, values }: PreparedQuery): Promise<T>
+{
+    return new Promise<T>((resolve, reject) =>
     {
         connection.query(
-            preparedSql.join(''),
-            preparedValues,
+            sql,
+            values,
             (error, results) =>
             {
                 if(error)
@@ -158,18 +205,38 @@ export function sql<TReturn = any>(sqlParts: TemplateStringsArray | string | str
                     return
                 }
                 resolve(results)
-            },
+            }
         )
     })
 }
 
+export function sql<T = any>(strings: TemplateStringsArray, ...tags: any[]): Promise<T>
+export function sql<T = any>(sql: string, ...values: any[]): Promise<T>
+export function sql<T = any>(sqlParts: TemplateStringsArray | string | string[], ...values: any[]): Promise<T>
+{
+    EscapedParameter.escapeWith = connections.single
+    return runQuery<T>(connections.single, prepareQuery(sqlParts, values))
+}
+
+export function sqlMulti<T = any>(strings: TemplateStringsArray, ...tags: any[]): Promise<T>
+export function sqlMulti<T = any>(sql: string, ...values: any[]): Promise<T>
+export function sqlMulti<T = any>(sqlParts: TemplateStringsArray | string | string[], ...values: any[]): Promise<T>
+{
+    EscapedParameter.escapeWith = connections.multi
+    return runQuery<T>(connections.multi, prepareQuery(sqlParts, values))
+}
+
+
 export default {
     config,
-    connection,
-    connect,
+    connection: connections.single,
+    connections,
+    initialize,
     middleware,
     sql,
+    sqlMulti,
     unsafe,
     UnsafeParameter,
+    EscapedParameter,
     escape,
 }

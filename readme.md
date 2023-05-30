@@ -8,6 +8,7 @@
  - __POST__ /entry
  - __GET__ /entry/__{entryId}__/messages  
  Sender tomt array selvom der ikke findes en User med det givne ID.
+ - __POST__ /entry/__{entryId}__/messages
  - __GET__ /user/current
  - __GET__ /user
  - __GET__ /user/__{userId}__

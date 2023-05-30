@@ -94,7 +94,7 @@ Promise.all([
     }),
 
     // Connects to MySQL
-    database.connect(),
+    database.initialize(),
 ]).then(() =>
 {
     // Start the server

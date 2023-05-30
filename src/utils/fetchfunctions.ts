@@ -294,7 +294,7 @@ export async function fetchUserRolePermissions(companyId: number, field: 'UserId
             break
 
         case 'PermissionId':
-            subquery = escape(values)
+            subquery = escape(values).toString()
             break
     }
 
