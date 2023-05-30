@@ -68,14 +68,6 @@ app.use(authmw({
 }))
 
 
-// This shit is just for debugging
-// Dont mind
-app.get('/', (_, res) =>
-{
-    log.info('Hello world was visited.')
-    res.send('Hello World!')
-})
-
 // Swagger routes
 app.use('/swagger', express.static(swagger.absolutePath()))
 app.use('/static', express.static('./../static'))
