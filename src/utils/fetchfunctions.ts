@@ -760,3 +760,76 @@ export async function fetchFullTimeEntryTypeCollection(companyId: number, collec
         TimeTags:           Array.from((await fetchTimetags(companyId, 'Id', ruleIds)).values()),
     }
 }
+
+export async function fetchTimeEntryMessages(companyId: number, entryId: number): Promise<Map<number, ApiDataTypes.Objects.TimeEntryMessage>>
+export async function fetchTimeEntryMessages(companyId: number, entryId: number | undefined, field: 'Before' | 'After', values: number): Promise<Map<number, ApiDataTypes.Objects.TimeEntryMessage>>
+export async function fetchTimeEntryMessages(companyId: number, entryId: number | undefined, field: 'Id' | 'UserId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.TimeEntryMessage>>
+export async function fetchTimeEntryMessages(companyId: number, entryId?: number, field: 'Id' | 'UserId' | 'Before' | 'After' | 'None' = 'None', values: undefined | number | number[] = undefined): Promise<Map<number, ApiDataTypes.Objects.TimeEntryMessage>>
+{
+    if(entryId == null && (field === 'None' || values == null))
+        throw new Error('Invalid parameters. Neither entryId or field+values was given.')
+
+    if((field === 'Before' || field === 'After') && typeof values !== 'number')
+        throw new Error('Invalid parameters. field "Before"/"After" requires values to be a number')
+
+    const clauses: string[] = []
+    switch(field)
+    {
+        case 'None':
+            if(typeof values !== 'undefined')
+                throw new Error('values must be undefined')
+            if(typeof entryId !== 'number')
+                throw new Error('entryId must be a number')
+            break
+
+        case 'After':
+        case 'Before':
+            if(typeof values !== 'number')
+                throw new Error('values must be a number')
+
+            clauses.push(/*SQL*/`UNIX_TIMESTAMP(tem.CreatedAt) ${field === 'After' ? '>' : '<'}= ${escape(values)}`)
+            break
+
+        case 'Id':
+        case 'UserId':
+            if(!Array.isArray(values))
+                throw new Error('values must be an array')
+
+            if(!values.length)
+                return new Map()
+
+            clauses.push(/*SQL*/`tem.${field} IN (${escape(values)})`)
+            break
+    }
+
+    if(typeof entryId === 'number')
+        clauses.push(/*SQL*/`tem.TimeEntryId = ${escape(entryId)}`)
+
+    const results = await sql`
+        SELECT
+            tem.Id                        AS Id,
+            tem.UserId                    AS UserId,
+            tem.TimeEntryId               AS TimeEntryId,
+            UNIX_TIMESTAMP(tem.CreatedAt) AS CreatedAt,
+            tem.Message                   AS Message
+        FROM
+            timeentry_messages AS tem
+        WHERE
+            tem.CompanyId = ${companyId}
+            ${unsafe(collapseClauses(clauses))}`
+
+    const messages = new Map<number, ApiDataTypes.Objects.TimeEntryMessage>()
+    for(const row of results)
+    {
+        messages.set(row.Id, {
+            Id:          row.Id,
+            CompanyId:   companyId,
+            UserId:      row.UserId,
+            TimeEntryId: row.TimeEntryId,
+            CreatedAt:   row.CreatedAt,
+            Message:     row.Message,
+        })
+    }
+
+    return messages
+}

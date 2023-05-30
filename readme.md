@@ -5,7 +5,9 @@
  - __POST__ /auth/refresh
  - __GET__ /entries  
  Mangler "fulfillsTag" og "fulfillsRule".
- - __POST__ /entry  
+ - __POST__ /entry
+ - __GET__ /entry/__{entryId}__/messages  
+ Sender tomt array selvom der ikke findes en User med det givne ID.
  - __GET__ /user/current
  - __GET__ /user
  - __GET__ /user/__{userId}__
