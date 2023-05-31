@@ -19,6 +19,7 @@ import fsrecursivesearch from './utils/fsrecursivesearch'
 import authmw from './middlewares/auth'
 import mapiterator from './utils/mapiterator'
 import database from './utils/database'
+import userpermissions from './utils/userpermissions'
 
 if(usingDotenvExample)
 {
@@ -96,6 +97,11 @@ Promise.all([
     // Connects to MySQL
     database.initialize(),
 ]).then(() =>
+{
+    // Confirm that the permissions table is properly filled
+    log.info('⚡ [SERVER] Verifying user role permissions table')
+    return userpermissions.verifyDatabase()
+}).then(() =>
 {
     // Start the server
     app.listen(port, () =>
