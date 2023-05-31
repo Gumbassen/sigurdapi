@@ -1,10 +1,17 @@
 import express, { Request, Response } from 'express'
 import nocache from 'nocache'
 import endpoint from '../../utils/endpoint'
-import { sql } from '../../utils/database'
-import Token, { TokenExpiredError, TokenInvalidError, TokenMissingError } from '../../utils/token'
+import Token, {
+    RefreshToken,
+    AccessToken,
+    TokenExpiredError,
+    TokenInvalidError,
+    TokenMissingError,
+} from '../../utils/token'
 import intervalparser from '../../utils/intervalparser'
 import { error, unauthorized } from '../../utils/common'
+import { SQLNoResultError, fetchFullUser, fetchLogin } from '../../utils/fetchfunctions'
+import log from '../../utils/logger'
 
 const router = express.Router()
 router.use(nocache())
@@ -14,7 +21,7 @@ const ttlAccess  = intervalparser(process.env.TOKEN_TTL_ACCESS  ?? 'P30I').total
 const ttlRefresh = intervalparser(process.env.TOKEN_TTL_REFRESH ?? 'P1M').totalSeconds
 
 
-router.post('/authenticate', async (req: Request, res: Response) =>
+router.post('/authenticate', (req: Request, res: Response) =>
 {
     let validated = 0
     for(const field of [ 'Username', 'Password' ])
@@ -32,53 +39,78 @@ router.post('/authenticate', async (req: Request, res: Response) =>
     if(validated !== 2)
         return error(res, 400, '"Username" or "Password" is missing or invalid')
 
-    // FIXME: Add hashing to the passwords
-    const result = await sql`
-        SELECT
-            UserId,
-            CompanyId
-        FROM
-            user_logins
-        WHERE
-            Username = ${String(req.body.Username)}
-            AND Password = ${String(req.body.Password)}
-        LIMIT 1`
+    fetchLogin(req.body.Username, req.body.Password).then(async ({ UserId, CompanyId }) =>
+    {
+        try
+        {
+            const user = await fetchFullUser(CompanyId, UserId)
+    
+            const response: ApiDataTypes.Responses.AuthenticationResponse = {
+                accessToken: Token.fromPayload<AccessToken>({
+                    typ: 'access',
+                    uid: UserId,
+                    cid: CompanyId,
+                    rid: user.UserRoleId,
+                    fln: user.FullName,
+                    hdt: user.HiredDate ?? null,
+                    fdt: user.FiredDate ?? null,
+                }, ttlAccess).toTokenObject(),
+                refreshToken: Token.fromPayload<RefreshToken>({
+                    typ: 'refresh',
+                    uid: UserId,
+                    cid: CompanyId,
+                }, ttlRefresh).toTokenObject(),
+            }
+    
+            res.send(response)
+        }
+        catch(_error)
+        {
+            if(!(_error instanceof SQLNoResultError))
+                throw _error
+    
+            error(res, 400, 'User no longer exists')
+        }
+    }).catch(_error =>
+    {
+        if(!(_error instanceof Error))
+        {
+            log.error(_error)
+            error(res, 500, 'Unknown error')
+        }
 
-    if(!result.length)
-        return error(res, 400, 'Invalid credentials')
+        if(!(_error instanceof SQLNoResultError))
+            throw _error
 
-    const userId: number    = result[0].UserId
-    const companyId: number = result[0].CompanyId
- 
-    const response: ApiDataTypes.Responses.AuthenticationResponse = {
-        accessToken: Token.fromPayload({
-            typ: 'access',
-            uid: userId,
-            cid: companyId,
-        }, ttlAccess).toTokenObject(),
-        refreshToken: Token.fromPayload({
-            typ: 'refresh',
-            uid: userId,
-            cid: companyId,
-        }, ttlRefresh).toTokenObject(),
-    }
-
-    res.send(response)
+        error(res, 400, 'Invalid credentials')
+    })
 })
 
-router.post('/refresh', (req: Request, res: Response) =>
+router.post('/refresh', async (req: Request, res: Response) =>
 {
     try
     {
         const token = Token.fromRequest(req)
-        if(!token.verify() || token.getPayloadField('typ') !== 'refresh')
+        if(!token.verify())
             return unauthorized(res)
 
+        if(!token.isOfType<RefreshToken>('refresh'))
+            return unauthorized(res)
+
+        const userId    = token.getPayloadField('uid')
+        const companyId = token.getPayloadField('cid')
+
+        const user = await fetchFullUser(companyId, userId)
+
         const response: ApiDataTypes.Responses.AuthenticationResponse = {
-            accessToken: Token.fromPayload({
+            accessToken: Token.fromPayload<AccessToken>({
                 typ: 'access',
                 uid: token.getPayloadField('uid'),
                 cid: token.getPayloadField('cid'),
+                rid: user.UserRoleId,
+                fln: user.FullName,
+                hdt: user.HiredDate ?? null,
+                fdt: user.FiredDate ?? null,
             }).toTokenObject(),
             refreshToken: token.toTokenObject(),
         }

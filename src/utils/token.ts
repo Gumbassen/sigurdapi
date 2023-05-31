@@ -70,13 +70,9 @@ export interface TokenHeader
     jti: string
 }
 
-export interface TokenPayload
-{
+interface BaseTokenType {
     /** Token type: Determines whether this is an access or refresh token */
-    typ: 'access' | 'refresh'
-
-    /** Subject: string or url. Should be locally or globally unique. */
-    sub?: string
+    typ: string
 
     /** User ID: The current users ID */
     uid: number
@@ -85,10 +81,32 @@ export interface TokenPayload
     cid: number
 }
 
+export interface AccessToken extends BaseTokenType {
+    typ: 'access'
+
+    /** UserRole ID: The current users UserRole ID */
+    rid: number
+
+    /** FullName: The users full name */
+    fln: string
+
+    /** HiredDate: The users first day of employment (if set) */
+    hdt: Nullable<number>
+
+    /** FiredDate: The users last day of employment (if set) */
+    fdt: Nullable<number>
+}
+
+export interface RefreshToken extends BaseTokenType {
+    typ: 'refresh'
+}
+
+export type TokenType = AccessToken | RefreshToken
+
 // The actual token class
-export default class Token
+export default class Token<T extends BaseTokenType = TokenType>
 {
-    public static fromAuthHeader(value: string): Token
+    public static fromAuthHeader<T extends BaseTokenType = TokenType>(value: string): Token<T>
     {
         if(value.startsWith('Bearer '))
             value = value.substring(7)
@@ -98,30 +116,30 @@ export default class Token
         if(parts.length !== 3)
             throw new TokenInvalidError(`parts.length=${parts.length} (should be 3)`)
     
-        const token = new this()
+        const token = new this<T>()
         token.header    = this.parseHeader(parts[0])
-        token.payload   = this.parsePayload(parts[1])
+        token.payload   = this.parsePayload<T>(parts[1])
         token.signature = parts[2]
         return token
     }
 
-    public static fromRequest(request: Request): Token
+    public static fromRequest<T extends BaseTokenType = TokenType>(request: Request): Token<T>
     {
         const value = request.header('Authorization')
         if(typeof value !== 'string')
             throw new TokenMissingError()
 
-        return this.fromAuthHeader(value)
+        return this.fromAuthHeader<T>(value)
     }
 
-    public static fromPayload(payload: TokenPayload, ttl?: number): Token
+    public static fromPayload<T extends BaseTokenType = TokenType>(payload: T, ttl?: number): Token<T>
     {
         const now = Date.now()
 
         if(typeof ttl === 'undefined')
             ttl = 30 * 60 * 1000 // Default 30 minutes
 
-        const token = new this()
+        const token = new this<T>()
         token.header = {
             typ: 'JWT',
             alg: 'HS256',
@@ -136,7 +154,7 @@ export default class Token
     }
 
     private header!: TokenHeader
-    private payload!: TokenPayload
+    private payload!: T
 
     private verified = false
     private signature?: string = undefined
@@ -195,7 +213,7 @@ export default class Token
     /**
      * Gets the value of a specific header field.
      */
-    public getHeaderField<T extends keyof TokenHeader>(field: T): TokenHeader[T]
+    public getHeaderField<K extends keyof TokenHeader>(field: K): TokenHeader[K]
     {
         if(!this.hasHeaderField(field))
             throw new Error(`Token header does not contain the field "${String(field)}"`)
@@ -208,7 +226,7 @@ export default class Token
      * 
      * Resets the token signature.
      */
-    public setHeaderField<T extends keyof TokenHeader>(field: T, value: TokenHeader[T]): void
+    public setHeaderField<K extends keyof TokenHeader>(field: K, value: TokenHeader[K]): void
     {
         this.header[field] = value
         this.unsign()
@@ -217,7 +235,7 @@ export default class Token
     /**
      * Checks if the token payload contains a given field.
      */
-    public hasPayloadField(field: keyof TokenPayload): boolean
+    public hasPayloadField(field: keyof T): boolean
     {
         return typeof this.payload[field] !== 'undefined'
     }
@@ -225,7 +243,7 @@ export default class Token
     /**
      * Gets the value of a specific payload field.
      */
-    public getPayloadField<T extends keyof TokenPayload>(field: T): TokenPayload[T]
+    public getPayloadField<K extends keyof T>(field: K): T[K]
     {
         if(!this.hasPayloadField(field))
             throw new Error(`Token payload does not contain the field "${String(field)}"`)
@@ -238,7 +256,7 @@ export default class Token
      * 
      * Resets the token signature.
      */
-    public setPayloadField<T extends keyof TokenPayload>(field: T, value: TokenPayload[T]): void
+    public setPayloadField<K extends keyof T>(field: K, value: T[K]): void
     {
         this.payload[field] = value
         this.unsign()
@@ -297,9 +315,14 @@ export default class Token
         return JSON.parse(Buffer.from(header, 'base64url').toString())
     }
 
-    private static parsePayload(payload: string): TokenPayload
+    private static parsePayload<T extends BaseTokenType = TokenType>(payload: string): T
     {
         // TODO: Improve this
         return JSON.parse(Buffer.from(payload, 'base64url').toString())
+    }
+
+    public isOfType<C extends TokenType>(type: C['typ']): this is Token<C>
+    {
+        return this.getPayloadField('typ') === type
     }
 }

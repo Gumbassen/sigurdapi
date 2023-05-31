@@ -906,3 +906,26 @@ export async function fetchTimeEntryMessages(companyId: number, entryId?: number
 
     return messages
 }
+
+export async function fetchLogin(username: string, password: string): Promise<{ CompanyId: number, UserId: number }>
+{
+    // FIXME: Add hashing to the passwords
+    const result = await sql`
+        SELECT
+            UserId,
+            CompanyId
+        FROM
+            user_logins
+        WHERE
+            Username = ${String(username)}
+            AND Password = ${String(password)}
+        LIMIT 1`
+
+    if(!result.length)
+        throw new SQLNoResultError('Invalid user credentials or no login exists')
+
+    return {
+        UserId:    result[0].UserId,
+        CompanyId: result[0].CompanyId,
+    }
+}
