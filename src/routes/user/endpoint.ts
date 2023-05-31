@@ -166,7 +166,7 @@ router.post('/', async (req: Request, res: Response) =>
                 MiddleName   = ${userObj.MiddleName ?? null},
                 SurName      = ${userObj.SurName},
                 ProfileImage = ${userObj.ProfileImage ?? null},
-                HiredDate    = FROM_UNIXTIME(${userObj.FiredDate ?? null}),
+                HiredDate    = FROM_UNIXTIME(${userObj.HiredDate ?? null}),
                 FiredDate    = FROM_UNIXTIME(${userObj.FiredDate ?? null})`
     
         userObj.Id = result.insertId
