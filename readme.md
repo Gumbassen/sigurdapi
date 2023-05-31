@@ -1,47 +1,61 @@
 
+## OBS!
+> Mange POST-requests er ikke beskrevet ordenligt i swagger.  
+> F.eks. giver det ikke mening at man skal angive et ID når man opretter en Location.  
+> CompanyId behøves aldrig sendes med, da den allerede er kendt gennem brugerens token.
+
+---
+
 # Funktionelle endpoints
 
- - __POST__ /auth/authenticate
- - __POST__ /auth/refresh
- - __GET__ /entries  
- Mangler "fulfillsTag" og "fulfillsRule".
- - __POST__ /entry
- - __GET__ /entry/__{entryId}__
- - __GET__ /entry/__{entryId}__/messages  
- Sender tomt array selvom der ikke findes en User med det givne ID.
- - __POST__ /entry/__{entryId}__/messages
- - __GET__ /user/current
- - __GET__ /user
- - __POST__ /user
- - __GET__ /user/__{userId}__
- - __DELETE__ /user/__{userId}__
- - __GET__ /user/__{userId}__/locations
- - __GET__ /user/__{userId}__/roles
- - __GET__ /user/__{userId}__/permissions
- - __GET__ /user/__{userId}__/tagcollections  
- Sender tomt array selvom der ikke findes en User med det givne ID.
- - __POST__ /user/__{userId}__/tagcollections
- - __GET__ /user/__{userId}__/tagcollections/__{collectionId}__
- - __DELETE__ /user/__{userId}__/tagcollections/__{collectionId}__
- - __GET__ /timetag
- - __GET__ /timetag/__{timeTagId}__
- - __GET__ /timetag/__{timeTagId}__/rules  
- Sender tomt array selvom der ikke findes et TimeTag med det givne ID.
- - __GET__ /timetag/__{timeTagId}__/rules/__{ruleId}__
- - __GET__ /location
- - __GET__ /location/__{locationId}__
- - __GET__ /location/__{locationId}__/users
- - __GET__ /location/__{locationId}__/leaders
- - __GET__ /role
- - __POST__ /role
- - __GET__ /role/__{roleId}__
- - __DELETE__ /role/__{roleId}__
- - __GET__ /role/__{roleId}__/permission
- - __POST__ /role/__{roleId}__/permission/__{permissionId}__
- - __DELETE__ /role/__{roleId}__/permission/__{permissionId}__
- - __GET__ /roles/permission
- - __GET__ /roles/permission/__{permissionId}__
+## Auth
+ - __[POST]__ /auth/authenticate
+ - __[POST]__ /auth/refresh
 
-# OBS!
-Mange POST-requests er ikke beskrevet ordenligt i swagger.  
-F.eks. giver det ikke mening at man skal angive et ID når man opretter en Location.
+## Entry
+ - __[GET]__ /entries  
+ Mangler "fulfillsTag" og "fulfillsRule".
+ - __[POST]__ /entry
+ - __[GET]__ /entry/__{entryId}__
+ - __[GET]__ /entry/__{entryId}__/messages  
+   Sender tomt array selvom der ikke findes en User med det givne ID.
+ - __[POST]__ /entry/__{entryId}__/messages
+
+## User
+ - __[GET]__ /user/current
+ - __[GET]__ /user
+ - __[POST]__ /user
+ - __[GET]__ /user/__{userId}__
+ - __[DELETE]__ /user/__{userId}__
+ - __[GET]__ /user/__{userId}__/locations
+ - __[GET]__ /user/__{userId}__/roles
+ - __[GET]__ /user/__{userId}__/permissions
+ - __[GET]__ /user/__{userId}__/tagcollections  
+ Sender tomt array selvom der ikke findes en User med det givne ID.
+ - __[POST]__ /user/__{userId}__/tagcollections
+ - __[GET]__ /user/__{userId}__/tagcollections/__{collectionId}__
+ - __[DELETE]__ /user/__{userId}__/tagcollections/__{collectionId}__
+
+## Timetag
+ - __[GET]__ /timetag
+ - __[GET]__ /timetag/__{timeTagId}__
+ - __[GET]__ /timetag/__{timeTagId}__/rules  
+ Sender tomt array selvom der ikke findes et TimeTag med det givne ID.
+ - __[GET]__ /timetag/__{timeTagId}__/rules/__{ruleId}__
+
+## Location
+ - __[GET]__ /location
+ - __[GET]__ /location/__{locationId}__
+ - __[GET]__ /location/__{locationId}__/users
+ - __[GET]__ /location/__{locationId}__/leaders
+
+## Role
+ - __[GET]__ /role
+ - __[POST]__ /role
+ - __[GET]__ /role/__{roleId}__
+ - __[DELETE]__ /role/__{roleId}__
+ - __[GET]__ /role/__{roleId}__/permission
+ - __[POST]__ /role/__{roleId}__/permission/__{permissionId}__
+ - __[DELETE]__ /role/__{roleId}__/permission/__{permissionId}__
+ - __[GET]__ /roles/permission
+ - __[GET]__ /roles/permission/__{permissionId}__
