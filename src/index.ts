@@ -45,17 +45,18 @@ app.disable('x-powered-by')
 app.set('etag', false)
 
 // Initialize middlewares
+app.use(express.json())
 app.use((req, res, next) =>
 {
     log.debug(`[HTTP] [${req.method}] ${req.url}`)
+    log.debug(`Body: ${JSON.stringify(req.body, null, 2)}`)
     next()
 })
 app.use(database.middleware())
-app.use(express.json())
 app.use(authmw({
     insecureFilter: request =>
     {
-        if([ '/auth/authenticate', '/auth/refresh', '/' ].includes(request.url))
+        if([ '/auth/authenticate', '/auth/refresh' ].includes(request.url))
             return true
 
         if(request.url.startsWith('/swagger'))

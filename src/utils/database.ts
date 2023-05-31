@@ -222,6 +222,21 @@ export function sqlMulti<T = any>(sqlParts: TemplateStringsArray | string | stri
     return runQuery<T>(connections.multi, prepareQuery(sqlParts, values))
 }
 
+export function nullableEpoch(timestamp: number | null | undefined): Date | null
+{
+    if(timestamp == null || Number.isNaN(timestamp) || !Number.isInteger(timestamp) || timestamp == 0)
+        return null
+
+    if(timestamp < 0)
+        throw new Error('I have decreed that timestamps SHALL be positive numbers only! Check your request data for errors.')
+
+    const date = new Date(timestamp)
+
+    if(date.getFullYear() > 2200 || date.getFullYear() <= 1970)
+        log.warn(`Got a date thats probably wrong: ${timestamp} = ${date.toISOString()}`)
+        
+    return date
+}
 
 export default {
     config,

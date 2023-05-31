@@ -14,7 +14,7 @@ import {
     fetchUsers,
 } from '../../utils/fetchfunctions'
 import { error } from '../../utils/common'
-import { escape, sql, unsafe } from '../../utils/database'
+import { escape, nullableEpoch, sql, unsafe } from '../../utils/database'
 
 const router = express.Router()
 
@@ -166,8 +166,8 @@ router.post('/', async (req: Request, res: Response) =>
                 MiddleName   = ${userObj.MiddleName ?? null},
                 SurName      = ${userObj.SurName},
                 ProfileImage = ${userObj.ProfileImage ?? null},
-                HiredDate    = FROM_UNIXTIME(${userObj.HiredDate ?? null}),
-                FiredDate    = FROM_UNIXTIME(${userObj.FiredDate ?? null})`
+                HiredDate    = ${nullableEpoch(userObj.HiredDate)},
+                FiredDate    = ${nullableEpoch(userObj.FiredDate)}`
     
         userObj.Id = result.insertId
     
