@@ -33,6 +33,7 @@
  - __GET__ /location/__{locationId}__/users
  - __GET__ /location/__{locationId}__/leaders
  - __GET__ /role
+ - __POST__ /role
  - __GET__ /role/__{roleId}__
  - __GET__ /role/__{roleId}__/permission
  - __GET__ /roles/permission
