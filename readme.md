@@ -35,6 +35,7 @@
  - __GET__ /role
  - __POST__ /role
  - __GET__ /role/__{roleId}__
+ - __DELETE__ /role/__{roleId}__
  - __GET__ /role/__{roleId}__/permission
  - __GET__ /roles/permission
  - __GET__ /roles/permission/__{permissionId}__
