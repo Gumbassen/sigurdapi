@@ -66,13 +66,49 @@ router.post('/', async (req: Request, res: Response) =>
 
     const permissionChecks = new Map<string, string>()
     if(entry.LocationId)
-        permissionChecks.set('LocationId', `(${escape(entry.LocationId)} IN (SELECT Id FROM locations WHERE CompanyId = ${escape(entry.CompanyId)})) AS LocationId`)
+    {
+        permissionChecks.set('LocationId', /*SQL*/`(
+            ${escape(entry.LocationId)} IN (
+                SELECT
+                    Id
+                FROM
+                    locations
+                WHERE
+                    CompanyId = ${escape(entry.CompanyId)}
+                    AND Id = ${escape(entry.LocationId)}
+            )
+        ) AS LocationId `)
+    }
 
     if(entry.TimeEntryTypeId)
-        permissionChecks.set('TimeEntryTypeId', `(${escape(entry.TimeEntryTypeId)} IN (SELECT Id FROM time_entry_types WHERE CompanyId = ${escape(entry.CompanyId)})) AS TimeEntryTypeId`)
+    {
+        permissionChecks.set('TimeEntryTypeId', /*SQL*/`(
+            ${escape(entry.TimeEntryTypeId)} IN (
+                SELECT
+                    Id
+                FROM
+                    time_entry_types
+                WHERE
+                    CompanyId = ${escape(entry.CompanyId)}
+                    AND Id = ${escape(entry.TimeEntryTypeId)}
+            )
+        ) AS TimeEntryTypeId `)
+    }
 
     if(entry.UserId)
-        permissionChecks.set('UserId', `(${escape(entry.UserId)} IN (SELECT Id FROM users WHERE CompanyId = ${escape(entry.CompanyId)})) AS UserId`)
+    {
+        permissionChecks.set('UserId', /*SQL*/`(
+            ${escape(entry.UserId)} IN (
+                SELECT
+                    Id
+                FROM
+                    users
+                WHERE
+                    CompanyId = ${escape(entry.CompanyId)}
+                    AND Id = ${escape(entry.UserId)}
+            )
+        ) AS UserId `)
+    }
 
     if(permissionChecks.size)
     {
