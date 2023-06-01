@@ -772,9 +772,6 @@ export async function fetchLocationUsers(companyId: number, locationIds: number[
         GROUP BY
             l.Id`
 
-    if(!results.length)
-        throw new SQLNoResultError(`[CID=${companyId}] Location.Id IN (${locationIds.join(',')}) not found`)
-
     const locations                                       = new Map<number, ApiDataTypes.Objects.User[]>()
     const userIds: number[]                               = []
     const userLocationLUT: { [UserId: number]: number[] } = {}
