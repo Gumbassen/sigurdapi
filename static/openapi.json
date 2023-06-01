@@ -119,6 +119,134 @@
         }
       }
     },
+    "/users": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Returns users by searching for them using search parameters",
+        "description": "This endpoint allows the client to search for users using any combination of query parameters.\n\nIf no search-parameters is given then all users is returned.",
+        "parameters": [
+          {
+            "name": "location",
+            "in": "query",
+            "description": "One or more location IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            "style": "pipeDelimited"
+          },
+          {
+            "name": "user",
+            "in": "query",
+            "description": "One or more user IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            "style": "pipeDelimited"
+          },
+          {
+            "name": "hiredAfter",
+            "in": "query",
+            "description": "Constrain results to users who has been hired on or after this date. Treats no hiring date as a positive result.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "timestamp"
+            }
+          },
+          {
+            "name": "firedAfter",
+            "in": "query",
+            "description": "Constrain results to users who has been fired on or after this date. Treats no firing date as a positive result.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "timestamp"
+            }
+          },
+          {
+            "name": "hiredBefore",
+            "in": "query",
+            "description": "Constrain results to users who has been hired on or before this date. Treats no hiring date as a positive result.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "timestamp"
+            }
+          },
+          {
+            "name": "firedBefore",
+            "in": "query",
+            "description": "Constrain results to users who has been fired on or before this date. Treats no firing date as a positive result.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "timestamp"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "description": "One or more user-role IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            "style": "pipeDelimited"
+          },
+          {
+            "name": "leadersOf",
+            "in": "query",
+            "description": "One or more location IDs",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            "style": "pipeDelimited"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          }
+        }
+      }
+    },
     "/user": {
       "get": {
         "tags": [
