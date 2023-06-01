@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 import { Request } from 'express'
-import { createHmac, randomUUID } from 'crypto'
+import { createHash, createHmac, randomUUID } from 'crypto'
 import log from './logger'
 import { EUserRolePermission } from './userpermissions'
+import fs from 'fs'
 
 if(typeof process.env.JWT_SECRET !== 'string')
     throw new Error('There is no "process.env.JWT_SECRET"...')
@@ -69,6 +70,9 @@ export interface TokenHeader
 
     /** JWT ID: a practically unique ID for this specific token */
     jti: string
+
+    /** Token version: The version of token.ts that created the token */
+    ver: string
 }
 
 interface BaseTokenType {
@@ -106,6 +110,28 @@ export interface RefreshToken extends BaseTokenType {
 }
 
 export type TokenType = AccessToken | RefreshToken
+
+// Contains this files md5 hash, which is used to version-control the tokens.
+// If this file has been changed, then the token will probably be invalid
+let selfHashString: string
+export function getTokenVersionId(): string
+{
+    if(selfHashString)
+        return selfHashString
+
+    selfHashString = ''
+    const bytes = createHash('sha1').update(fs.readFileSync(__filename)).digest('binary')
+    for(let i = 0; i < bytes.length / 4; i++)
+    {
+        let n = 0
+        for(let j = 0; j < 4; j++)
+            n += bytes.charCodeAt(i * 4 + j)
+
+        selfHashString += (n % 256).toString(16).padStart(2, '0')
+    }
+    log.silly(`Token version ID: ${selfHashString}`)
+    return selfHashString
+}
 
 // The actual token class
 export default class Token<T extends BaseTokenType = TokenType>
@@ -151,6 +177,7 @@ export default class Token<T extends BaseTokenType = TokenType>
             ist: now,
             iss: 'Bongotrummer',
             jti: randomUUID(),
+            ver: getTokenVersionId(),
         }
         token.payload = payload
         token.sign()
@@ -170,17 +197,32 @@ export default class Token<T extends BaseTokenType = TokenType>
 
     public verify(): boolean
     {
-        if(this.hasHeaderField('typ') && this.getHeaderField('typ') !== 'JWT')
+        if(!this.hasHeaderField('typ') || this.getHeaderField('typ') !== 'JWT')
+        {
+            log.silly('Token rejected: Invalid or missing token type.')
             return false
+        }
+
+        if(!this.hasHeaderField('ver') || this.getHeaderField('ver') !== getTokenVersionId())
+        {
+            log.silly(`Token rejected: Token version mismatch. [ours: ${getTokenVersionId()}] vs [theirs: ${this.getHeaderFieldOrUndefined('ver')}]`)
+            return false
+        }
 
         if(typeof this.signature !== 'string')
+        {
+            log.silly('Token rejected: Token signature is missing or invalid.')
             return false
+        }
 
         if(this.verified)
             return true
 
         if(this.signature !== this.calculateSignature())
+        {
+            log.silly('Token rejected: Token signature mismatch.')
             return false
+        }
 
         this.verified = true
         return true
@@ -223,6 +265,14 @@ export default class Token<T extends BaseTokenType = TokenType>
             throw new Error(`Token header does not contain the field "${String(field)}"`)
 
         return this.header[field]
+    }
+
+    public getHeaderFieldOrUndefined<K extends keyof TokenHeader>(field: K): TokenHeader[K] | undefined
+    {
+        if(!this.hasHeaderField(field))
+            return undefined
+
+        return this.getHeaderField(field)
     }
 
     /**
