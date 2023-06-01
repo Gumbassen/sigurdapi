@@ -2,8 +2,44 @@ import { escape, sql, unsafe } from './database'
 import log from './logger'
 import mapiterator from './mapiterator'
 
+export enum EUserRolePermission {
+    'superadmin'              = 1,
+    'see_own_entries'         = 2,
+    'create_own_entries'      = 3,
+    'comment_own_entries'     = 4,
+    'manage_location_entries' = 5,
+    'edit_location_users'     = 6,
+    'create_location_users'   = 7,
+    'delete_location_users'   = 8,
+    'manage_location_logins'  = 9,
+    'manage_all_timetags'     = 10,
+    'manage_all_leaders'      = 11,
+    'manage_all_users'        = 12,
+    'manage_all_locations'    = 13,
+    'manage_all_roles'        = 14,
+}
+
+
+const reverseEUserRolePermission = Object.fromEntries(Object.entries(EUserRolePermission).map(([ k, v ]) => [ v, k ])) as unknown as { [x in EUserRolePermission]: keyof typeof EUserRolePermission }
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
+export namespace EUserRolePermission {
+    export function getNameOf(permission: EUserRolePermission): keyof typeof EUserRolePermission
+    {
+        return reverseEUserRolePermission[permission]
+    }
+
+    export function parse(permission: number): EUserRolePermission
+    {
+        if(!Object.values(EUserRolePermission).includes(permission))
+            throw new Error(`Permission "${permission}" is not defined in EUserRolePermission`)
+
+        return permission as EUserRolePermission
+    }
+}
+
 export const userRolePermissions = new Map<number, ApiDataTypes.Objects.UserRolePermission>([
-    { Id: 1,  Name: 'superadmin',              Description: 'Has full permissions to everything.' },
+    { Id: EUserRolePermission.superadmin,  Name: 'superadmin',              Description: 'Has full permissions to everything.' },
     { Id: 2,  Name: 'see-own-entries',         Description: 'Can see their own entries.' },
     { Id: 3,  Name: 'create-own-entries',      Description: 'Can create their own entries.' },
     { Id: 4,  Name: 'comment-own-entries',     Description: 'Can create comments on entries that belong to them.' },

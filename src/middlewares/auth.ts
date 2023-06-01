@@ -1,15 +1,21 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { NextFunction, Request, RequestHandler, Response } from 'express'
-import Token, { TokenExpiredError, TokenInvalidError, TokenMissingError } from '../utils/token'
+import Token, { AccessToken, TokenExpiredError, TokenInvalidError, TokenMissingError } from '../utils/token'
 import log from '../utils/logger'
+import { EUserRolePermission } from '../utils/userpermissions'
+import { pathToRegexp } from 'path-to-regexp'
 
+export type InsecureFilterFunc = (request: Request) => boolean
+export type AccessFilterFunc   = (request: Request, token: Token<AccessToken>) => boolean
 
 export interface AuthMiddlewareOptions
 {
-    onInvalidHandler?: RequestHandler
-    onMissingHandler?: RequestHandler
-    onExpiredHandler?: RequestHandler
-    insecureFilter: (request: Request) => boolean
+    onInvalidHandler?:    RequestHandler
+    onMissingHandler?:    RequestHandler
+    onExpiredHandler?:    RequestHandler
+    onNotAllowedHandler?: RequestHandler
+    insecureFilter:       InsecureFilterFunc
+    accessFilters:        { [ path: string ]: EUserRolePermission | AccessFilterFunc }
 }
 
 export default function(options: AuthMiddlewareOptions): RequestHandler
@@ -20,29 +26,41 @@ export default function(options: AuthMiddlewareOptions): RequestHandler
         res.sendStatus(401).end()
     }
 
-    options.onInvalidHandler ??= (rq, rs) => defaultHandler('invalid', rq, rs)
-    options.onMissingHandler ??= (rq, rs) => defaultHandler('missing', rq, rs)
-    options.onExpiredHandler ??= (rq, rs) => defaultHandler('expired', rq, rs)
+    options.onInvalidHandler    ??= (rq, rs) => defaultHandler('invalid',    rq, rs)
+    options.onMissingHandler    ??= (rq, rs) => defaultHandler('missing',    rq, rs)
+    options.onExpiredHandler    ??= (rq, rs) => defaultHandler('expired',    rq, rs)
+    options.onNotAllowedHandler ??= (rq, rs) => defaultHandler('notallowed', rq, rs)
+
+    const accessFilters = new Map<RegExp, AccessFilterFunc>()
+    for(const [ path, value ] of Object.entries(options.accessFilters))
+    {
+        const regexp = pathToRegexp(path)
+
+        if(value instanceof Function)
+        {
+            accessFilters.set(regexp, value)
+            continue
+        }
+
+        accessFilters.set(regexp, (request, token) =>
+        {
+            return true
+        })
+    }
 
     return function(req: Request, res: Response, next: NextFunction)
     {
         if(options.insecureFilter(req))
-        {
-            next()
-            return
-        }
+            return next()
 
         try
         {
             const token = Token.fromRequest(req)
-            if(token.verify())
-            {
-                res.locals.accessToken = token
-                next()
-                return
-            }
 
-            options.onInvalidHandler!(req, res, next)
+            if(!token.verify() || !token.isOfType<AccessToken>('access'))
+                return options.onInvalidHandler!(req, res, next)
+            
+            res.locals.accessToken = token
         }
         catch(error)
         {
@@ -55,5 +73,16 @@ export default function(options: AuthMiddlewareOptions): RequestHandler
             else
                 defaultHandler('else', req, res)
         }
+
+        for(const [ path, func ] of accessFilters.entries())
+        {
+            if(!path.test(req.url))
+                continue
+
+            if(!func(req, res.locals.accessToken!))
+                return options.onNotAllowedHandler!(req, res, next)
+        }
+
+        next()
     }
 }
