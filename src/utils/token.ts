@@ -3,6 +3,7 @@
 import { Request } from 'express'
 import { createHmac, randomUUID } from 'crypto'
 import log from './logger'
+import { EUserRolePermission } from './userpermissions'
 
 if(typeof process.env.JWT_SECRET !== 'string')
     throw new Error('There is no "process.env.JWT_SECRET"...')
@@ -95,6 +96,9 @@ export interface AccessToken extends BaseTokenType {
 
     /** FiredDate: The users last day of employment (if set) */
     fdt: Nullable<number>
+
+    /* UserRole Permission IDs: All of the users permissions */
+    prm: EUserRolePermission[]
 }
 
 export interface RefreshToken extends BaseTokenType {

@@ -54,6 +54,7 @@ router.post('/authenticate', (req: Request, res: Response) =>
                     fln: user.FullName,
                     hdt: user.HiredDate ?? null,
                     fdt: user.FiredDate ?? null,
+                    prm: user.UserRole.PermissionIds,
                 }, ttlAccess).toTokenObject(),
                 refreshToken: Token.fromPayload<RefreshToken>({
                     typ: 'refresh',
@@ -111,6 +112,7 @@ router.post('/refresh', async (req: Request, res: Response) =>
                 fln: user.FullName,
                 hdt: user.HiredDate ?? null,
                 fdt: user.FiredDate ?? null,
+                prm: user.UserRole.PermissionIds,
             }).toTokenObject(),
             refreshToken: token.toTokenObject(),
         }

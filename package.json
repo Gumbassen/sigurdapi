@@ -20,6 +20,7 @@
     "jsonwebtoken": "^9.0.0",
     "mysql": "^2.18.1",
     "nocache": "^3.0.4",
+    "path-to-regexp": "^6.2.1",
     "protobufjs": "^7.2.3",
     "protobufjs-cli": "^1.1.1",
     "sha256": "^0.2.0",

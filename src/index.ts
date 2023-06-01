@@ -67,6 +67,7 @@ app.use(authmw({
 
         return false
     },
+    accessFilters: [],
 }))
 
 

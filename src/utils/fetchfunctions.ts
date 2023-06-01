@@ -561,6 +561,9 @@ export async function fetchFullUserRole(companyId: number, userRoleId: number): 
 
 export async function fetchTimeEntryTypeCollections(companyId: number, field: 'Id' | 'UserId' | 'TimeEntryTypeId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.TimeEntryTypeCollection>>
 {
+    if(!values.length)
+        return new Map()
+
     const results = await sql`
         SELECT
             tetc.Id                        AS Id,
