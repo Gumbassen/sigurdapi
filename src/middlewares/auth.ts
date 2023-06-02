@@ -5,20 +5,24 @@ import log from '../utils/logger'
 import { EUserRolePermission } from '../utils/userpermissions'
 import { pathToRegexp } from 'path-to-regexp'
 import { error } from '../utils/common'
+import { ApiRoutePath } from '../utils/ApiRoutes'
+import { HTTPMethod } from '../utils/HTTPMethod'
 
 export type InsecureFilterFunc = (request: Request) => boolean
 export type AccessFilterFunc   = (request: Request, token: Token<AccessToken>) => Nullable<boolean>
-export type HTTPMethod         = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
-interface AccessFilterOption_Func {
-    path:   string
+
+export interface AccessFilterFuncOption {
+    path:   ApiRoutePath
     filter: AccessFilterFunc
 }
-interface AccessFilterOption_MethodAndPermission {
-    path:       string
+
+export interface AccessFilterMethodAndPermissionOption {
+    path:       ApiRoutePath
     method:     HTTPMethod | HTTPMethod[]
     permission: EUserRolePermission | EUserRolePermission[]
 }
-export type AccessFilterOption = AccessFilterOption_Func | AccessFilterOption_MethodAndPermission
+
+export type AccessFilterOption = AccessFilterFuncOption | AccessFilterMethodAndPermissionOption
 
 export interface AuthMiddlewareOptions
 {
