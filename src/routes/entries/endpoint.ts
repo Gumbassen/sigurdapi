@@ -3,135 +3,78 @@ import endpoint from '../../utils/endpoint'
 import log from './../../utils/logger'
 import { sql, unsafe, escape } from '../../utils/database'
 import { error } from '../../utils/common'
+import { FetchTimeEntriesDateOption, FetchTimeEntriesNumberOption, FetchTimeEntriesOption } from '../../utils/fetchfunctions'
+import { digitStringRx, pipeDelimitedNumbersRx } from '../../utils/regexes'
 
 const router = express.Router()
 
 
 router.get('/', async (req: Request, res: Response) =>
 {
-    const query        = req.query
-    let   numClauses   = 0
-    const queryClauses = []
-    const companyId    = res.locals.accessToken!.getPayloadField('cid')
+    const token     = res.locals.accessToken!
+    const companyId = token.getPayloadField('cid')
+    const query     = req.query
 
-    if('location' in query)
+    const queryClauses: FetchTimeEntriesOption[] = []
+
+    const numberOptions: { [_: string]: FetchTimeEntriesNumberOption['field'] } = {
+        location: 'LocationId',
+        user:     'UserId',
+        group:    'GroupingId',
+        type:     'TimeEntryTypeId',
+    }
+    
+    for(const param in numberOptions)
     {
-        if(typeof query.location !== 'string')
-            return error(res, 400, 'Param "location" should be a pipe-delimited string')
+        if(!(param in query))
+            continue
 
-        const locations = []
-        for(const value of query.location.split('|'))
+        const values = query[param]
+
+        if(typeof values !== 'string' || !pipeDelimitedNumbersRx.test(values))
+            return error(res, 400, `Param "${param}" should be a pipe-delimited string`)
+
+        const ids: number[] = []
+        for(const value of values.split('|'))
         {
-            const location = Number.parseInt(value)
+            const parsed = Number.parseInt(value)
 
-            if(Number.isNaN(location) || location < 1)
-                return error(res, 400, 'Param "location" contains invalid entries')
+            if(Number.isNaN(parsed) || parsed < 1)
+                return error(res, 400, `Param "${param}" contains invalid entries`)
 
-            locations.push(location)
+            if(ids.includes(parsed))
+                continue
+
+            ids.push(parsed)
         }
 
-        if(!locations.length)
-            return error(res, 400, 'Param "location" must be omitted or contain one or more entries')
+        if(!ids.length)
+            return error(res, 400, `Param "${param}" must be omitted or contain at least one entry`)
 
-        numClauses++
-        queryClauses.push(`LocationId IN (${escape(locations)})`)
+        queryClauses.push({ field: numberOptions[param], value: ids })
     }
 
-    if('user' in query)
-    {
-        if(typeof query.user !== 'string')
-            return error(res, 400, 'Param "user" should be a pipe-delimited string')
-
-        const users = []
-        for(const value of query.user.split('|'))
-        {
-            const user = Number.parseInt(value)
-
-            if(Number.isNaN(user) || user < 1)
-                return error(res, 400, 'Param "user" contains invalid entries')
-
-            users.push(user)
-        }
-
-        if(!users.length)
-            return error(res, 400, 'Param "user" must be omitted or contain one or more entries')
-
-        numClauses++
-        queryClauses.push(`UserId IN (${escape(users)})`)
+    const dateOptions: { [_: string]: FetchTimeEntriesDateOption['field'] } = {
+        before: 'Before',
+        after:  'After',
     }
 
-    if('group' in query)
+    for(const param in dateOptions)
     {
-        if(typeof query.group !== 'string')
-            return error(res, 400, 'Param "group" should be a pipe-delimited string')
+        if(!(param in query))
+            continue
 
-        const groupingIds = []
-        for(const value of query.group.split('|'))
-        {
-            const group = Number.parseInt(value)
+        const value = query[param]
 
-            if(Number.isNaN(group) || group < 1)
-                return error(res, 400, 'Param "group" contains invalid entries')
+        if(typeof value !== 'string' || !digitStringRx.test(value))
+            return error(res, 400, `Param "${param}" should be a digit-string`)
 
-            groupingIds.push(group)
-        }
+        const parsed = Number.parseInt(value)
 
-        if(!groupingIds.length)
-            return error(res, 400, 'Param "group" must be omitted or contain one or more entries')
+        if(Number.isNaN(parsed) || parsed < 0)
+            return error(res, 400, `Param "${param}" is invalid`)
 
-        numClauses++
-        queryClauses.push(`GroupingId IN (${escape(groupingIds)})`)
-    }
-
-    if('type' in query)
-    {
-        if(typeof query.type !== 'string')
-            return error(res, 400, 'Param "type" should be a pipe-delimited string')
-
-        const typeIds = []
-        for(const value of query.type.split('|'))
-        {
-            const type = Number.parseInt(value)
-
-            if(Number.isNaN(type) || type < 1)
-                return error(res, 400, 'Param "type" contains invalid entries')
-
-            typeIds.push(type)
-        }
-
-        if(!typeIds.length)
-            return error(res, 400, 'Param "type" must be omitted or contain one or more entries')
-
-        numClauses++
-        queryClauses.push(`TimeEntryTypeId IN (${escape(typeIds)})`)
-    }
-
-    if('before' in query)
-    {
-        if(typeof query.before !== 'string')
-            return error(res, 400, 'Param "before" should be a string')
-
-        const before = Number.parseInt(query.before)
-
-        if(Number.isNaN(before))
-            return error(res, 400, 'Param "before" is invalid')
-
-        numClauses++
-        queryClauses.push(`UNIX_TIMESTAMP(Start) <= ${escape(before)}`)
-    }
-
-    if('after' in query)
-    {
-        if(typeof query.after !== 'string')
-            return error(res, 400, 'Param "after" should be a string')
-
-        const after = Number.parseInt(query.after)
-
-        if(Number.isNaN(after))
-            return error(res, 400, 'Param "after" is invalid')
-
-        numClauses++
-        queryClauses.push(`UNIX_TIMESTAMP(End) >= ${escape(after)}`)
+        queryClauses.push({ field: dateOptions[param], value: parsed })
     }
 
     const tagIds = []
@@ -174,7 +117,7 @@ router.get('/', async (req: Request, res: Response) =>
             return error(res, 400, 'Param "fulfillsRule" must be omitted or contain one or more entries')
     }
 
-    if(numClauses < 1)
+    if(!queryClauses.length)
         return error(res, 400, 'At least one parameter must be given')
 
     // FIXME: ADD SUPPORT FOR "fulfillsTag" AND "fulfillsRule"
@@ -208,6 +151,5 @@ router.get('/', async (req: Request, res: Response) =>
 
     res.send(JSON.stringify(result))
 })
-
 
 export default endpoint(router, {})

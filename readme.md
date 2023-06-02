@@ -22,6 +22,7 @@
  - __[POST]__ /entry/__{entryId}__/messages
 
 ## User
+ - __[GET]__ /users
  - __[GET]__ /user/current
  - __[GET]__ /user
  - __[POST]__ /user

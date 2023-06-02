@@ -23,17 +23,19 @@ function collapseClauses(clauses: string[]): string
     return ` AND ${clauses.join(' AND ')}`
 }
 
+export interface FetchTimeEntriesNumberOption {
+    field: 'Id' | 'UserId' | 'TimeEntryTypeId' | 'GroupingId' | 'LocationId'
+    value: number[]
+}
 
-export async function fetchTimeEntries(
-    companyId: number,
-    options: ({
-        field: 'Id' | 'UserId' | 'TimeEntryTypeId' | 'GroupingId',
-        value: number[]
-    } | {
-        field: 'Before' | 'After',
-        value: Date
-    })[]
-): Promise<Map<number, ApiDataTypes.Objects.TimeEntry>>
+export interface FetchTimeEntriesDateOption {
+    field: 'Before' | 'After'
+    value: Date | number
+}
+
+export type FetchTimeEntriesOption = FetchTimeEntriesNumberOption | FetchTimeEntriesDateOption
+
+export async function fetchTimeEntries(companyId: number, options: FetchTimeEntriesOption[]): Promise<Map<number, ApiDataTypes.Objects.TimeEntry>>
 {
     const clauses: string[] = []
     for(const option of options)
@@ -44,15 +46,22 @@ export async function fetchTimeEntries(
             case 'UserId':
             case 'TimeEntryTypeId':
             case 'GroupingId':
+            case 'LocationId':
                 clauses.push(/*SQL*/`te.${option.field} IN (${escape(option.value)})`)
                 break
 
             case 'Before':
-                clauses.push(/*SQL*/`te.Start >= ${escape(option.value)}`)
+                if(option.value instanceof Date)
+                    clauses.push(/*SQL*/`te.Start >= ${escape(option.value)}`)
+                else
+                    clauses.push(/*SQL*/`te.Start >= FROM_UNIXTIME(${escape(option.value)})`)
                 break
 
             case 'After':
-                clauses.push(/*SQL*/`te.End <= ${escape(option.value)}`)
+                if(option.value instanceof Date)
+                    clauses.push(/*SQL*/`te.End <= ${escape(option.value)}`)
+                else
+                    clauses.push(/*SQL*/`te.End <= FROM_UNIXTIME(${escape(option.value)})`)
                 break
         }
     }
@@ -74,7 +83,9 @@ export async function fetchTimeEntries(
             tem.TimeEntryId = te.Id
         WHERE
             te.CompanyId = ${companyId}
-            ${unsafe(collapseClauses(clauses))}`
+            ${unsafe(collapseClauses(clauses))}
+        GROUP BY
+            te.Id`
 
     const entries = new Map<number, ApiDataTypes.Objects.TimeEntry>()
     for(const row of results)
@@ -96,31 +107,80 @@ export async function fetchTimeEntries(
     return entries
 }
 
-export async function fetchUsers(companyId: number): Promise<Map<number, ApiDataTypes.Objects.User>>
-export async function fetchUsers(companyId: number, field: 'Id' | 'UserRoleId', values: number[]): Promise<Map<number, ApiDataTypes.Objects.User>>
-export async function fetchUsers(companyId: number, field: 'Id' | 'UserRoleId' | 'None' = 'None', values?: number[]): Promise<Map<number, ApiDataTypes.Objects.User>>
+export interface FetchUsersNumberOption {
+    field: 'Id' | 'UserRoleId' | 'LocationId' | 'leadersOf'
+    value: number[]
+}
+
+export interface FetchUsersDateOption {
+    field: 'hiredBefore' | 'hiredAfter' | 'firedBefore' | 'firedAfter'
+    value: Date | number
+}
+
+export type FetchUsersOption = FetchUsersNumberOption | FetchUsersDateOption
+
+export async function fetchUsers(companyId: number, options?: FetchUsersOption[]): Promise<Map<number, ApiDataTypes.Objects.User>>
 {
-    if(field !== 'None' && typeof values === 'undefined')
-        throw new Error('Invalid parameters. "values" is required if "field" isnt "None"')
-
     const clauses: string[] = []
-    switch(field)
+    for(const option of options ?? [])
     {
-        case 'Id':
-        case 'UserRoleId':
-            if(!Array.isArray(values))
-                throw new Error('values must be an array')
+        switch(option.field)
+        {
+            case 'Id':
+            case 'UserRoleId':
+                clauses.push(/*SQL*/`u.${option.field} IN (${escape(option.value)})`)
+                break
 
-            if(!values.length)
-                return new Map()
+            case 'LocationId':
+                clauses.push(/*SQL*/`u.Id IN (
+                    SELECT
+                        cxul.UserId
+                    FROM
+                        x_user_locations AS cxul
+                    WHERE
+                        cxul.LocationId IN (${escape(option.value)})
+                )`)
+                break
 
-            clauses.push(/*SQL*/`u.${field} IN (${escape(values)})`)
-            break
+            case 'leadersOf':
+                clauses.push(/*SQL*/`u.Id IN (
+                    SELECT
+                        cxll.UserId
+                    FROM
+                        x_location_leaders AS cxll
+                    WHERE
+                        cxll.LocationId IN (${escape(option.value)})
+                )`)
+                break
 
-        case 'None':
-            if(typeof values !== 'undefined')
-                throw new Error('values must be undefined')
-            break
+            case 'hiredAfter':
+                clauses.push(/*SQL*/`(
+                    u.HiredDate IS NULL
+                    OR u.HiredDate >= FROM_UNIXTIME(${escape(option.value instanceof Date ? option.value.getTime() : option.value)})
+                )`)
+                break
+
+            case 'firedAfter':
+                clauses.push(/*SQL*/`(
+                    u.FiredDate IS NULL
+                    OR u.FiredDate >= FROM_UNIXTIME(${escape(option.value instanceof Date ? option.value.getTime() : option.value)})
+                )`)
+                break
+
+            case 'hiredBefore':
+                clauses.push(/*SQL*/`(
+                    u.HiredDate IS NULL
+                    OR u.HiredDate <= FROM_UNIXTIME(${escape(option.value instanceof Date ? option.value.getTime() : option.value)})
+                )`)
+                break
+
+            case 'firedBefore':
+                clauses.push(/*SQL*/`(
+                    u.FiredDate IS NULL
+                    OR u.FiredDate <= FROM_UNIXTIME(${escape(option.value instanceof Date ? option.value.getTime() : option.value)})
+                )`)
+                break
+        }
     }
 
     const results = await sql`
@@ -132,8 +192,8 @@ export async function fetchUsers(companyId: number, field: 'Id' | 'UserRoleId' |
             u.MiddleName                 AS MiddleName,
             u.SurName                    AS SurName,
             u.ProfileImage               AS ProfileImage,
-            IF(u.HiredDate IS NULL, NULL, UNIX_TIMESTAMP(u.HiredDate)) AS HiredDate,
-            IF(u.FiredDate IS NULL, NULL, UNIX_TIMESTAMP(u.FiredDate)) AS FiredDate,
+            UNIX_TIMESTAMP(u.HiredDate)  AS HiredDate,
+            UNIX_TIMESTAMP(u.FiredDate)  AS FiredDate,
             GROUP_CONCAT(xul.LocationId) AS LocationIds,
             GROUP_CONCAT(tetc.Id)        AS TimeTagCollectionIds
         FROM
@@ -280,7 +340,9 @@ export async function fetchUserUserRoles(companyId: number, userIds: number[]): 
             xurp.UserRoleId = ur.Id
         WHERE
             u.CompanyId = ${companyId}
-            AND u.Id IN (${userIds})`
+            AND u.Id IN (${userIds})
+        GROUP BY
+            u.Id`
 
     const roles = new Map<number, ApiDataTypes.Objects.UserRole>()
     for(const row of results)
@@ -514,7 +576,7 @@ export async function fetchUserRoles(companyId: number, field: 'Id' | 'None' = '
             ur.CompanyId = ${companyId}
             ${unsafe(collapseClauses(clauses))}
         GROUP BY
-            xurp.UserRoleId`
+            ur.Id`
 
     const roles = new Map<number, ApiDataTypes.Objects.UserRole>()
     for(const row of results)
@@ -789,7 +851,7 @@ export async function fetchLocationUsers(companyId: number, locationIds: number[
         }
     }
 
-    for(const [ id, user ] of await fetchUsers(companyId, 'Id', userIds))
+    for(const [ id, user ] of await fetchUsers(companyId, [{ field: 'Id', value: userIds }]))
     {
         for(const locationId of userLocationLUT[id])
         {

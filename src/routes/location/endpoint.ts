@@ -192,8 +192,7 @@ router.get('/:locationId/leaders', async (req: Request, res: Response) =>
 
     res.send(Array.from((await fetchUsers(
         token.getPayloadField('cid'),
-        'Id',
-        locations.get(locationId)!.LeaderIds,
+        [{ field: 'Id', value: locations.get(locationId)!.LeaderIds }]
     )).values()))
 })
 
