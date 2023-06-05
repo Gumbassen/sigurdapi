@@ -215,7 +215,7 @@ export async function fetchUsers(companyId: number, options?: FetchUsersOption[]
         users.set(row.Id, {
             Id:                   row.Id,
             CompanyId:            companyId,
-            UserRoleId:           row.userRoleId,
+            UserRoleId:           row.UserRoleId,
             FullName:             row.FullName,
             FirstName:            row.FirstName,
             MiddleName:           row.MiddleName ?? undefined,
