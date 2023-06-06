@@ -1,6 +1,7 @@
 
 
 // Environment setup
+import './utils/extensions'
 import express from 'express'
 import dotenv from 'dotenv'
 import fs from 'fs'

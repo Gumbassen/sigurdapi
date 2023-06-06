@@ -1,4 +1,5 @@
 import { Response } from 'express'
+import log from './logger'
 
 export function unauthorized(response: Response, message?: string): void
 {
@@ -22,6 +23,8 @@ export function error(response: Response, status: number, message: string, code?
         ErrorCode: code ?? -1,
         Reason:    message,
     }
+
+    log.debug(`Returning an error response: ${JSON.stringify(data, null, 2)}`)
 
     response.status(status).send(data)
 }

@@ -27,6 +27,7 @@
  - __[GET]__ /user
  - __[POST]__ /user
  - __[GET]__ /user/__{userId}__
+ - __[PUT]__ /user/__{userId}__
  - __[DELETE]__ /user/__{userId}__
  - __[GET]__ /user/__{userId}__/locations
  - __[GET]__ /user/__{userId}__/roles

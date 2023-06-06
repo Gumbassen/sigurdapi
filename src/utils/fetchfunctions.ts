@@ -265,7 +265,7 @@ export async function fetchUser(companyId: number, field: 'Id', value: number): 
 
     return {
         Id:                   result[0].Id,
-        CompanyId:            result[0].CompanyId,
+        CompanyId:            companyId,
         UserRoleId:           result[0].UserRoleId,
         FullName:             result[0].FullName,
         FirstName:            result[0].FirstName,
