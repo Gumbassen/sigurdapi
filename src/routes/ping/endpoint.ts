@@ -1,14 +1,12 @@
 
-import express, { Request, Response } from 'express'
+import { Request, Response } from 'express'
 import endpoint from '../../utils/endpoint'
+import { EUserRolePermission } from '../../utils/userpermissions'
+import routes from '../../utils/ApiRoutes'
 
-const router = express.Router()
-
-
-router.all('/', (req: Request, res: Response) =>
-{
-    res.send('pong')
-})
-
-
-export default endpoint(router, {})
+export default endpoint({ nocache: true })
+    .SecureGet(EUserRolePermission.everyone, routes.ping.GET).addHandler((req: Request, res: Response) =>
+    {
+        res.send('pong')
+    }).done()
+    .export()

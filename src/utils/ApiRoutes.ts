@@ -1,6 +1,7 @@
 import { HTTPMethod } from './HTTPMethod'
 
 export enum ApiRoutePath {
+    ping                                    = '/ping',
     auth_authenticate                       = '/auth/authenticate',
     auth_refresh                            = '/auth/refresh',
     users                                   = '/users',
@@ -36,6 +37,9 @@ export enum ApiRoutePath {
 type ApiRoute = { [path: string | HTTPMethod]: ApiRoutePath | ApiRoute }
 type DefinedApiRoute<T> = ApiRoute & T
 interface _RouteRoot extends ApiRoute {
+    ping: DefinedApiRoute<{
+        [HTTPMethod.GET]: ApiRoutePath
+    }>
     auth: DefinedApiRoute<{
         authenticate: DefinedApiRoute<{
             [HTTPMethod.POST]: ApiRoutePath
@@ -122,6 +126,7 @@ interface _RouteRoot extends ApiRoute {
                     [HTTPMethod.DELETE]: ApiRoutePath.location_LOCATIONID_leader_LEADERID
                 }>
             }>
+            [HTTPMethod.GET]:    ApiRoutePath.location_LOCATIONID
             [HTTPMethod.PUT]:    ApiRoutePath.location_LOCATIONID
             [HTTPMethod.DELETE]: ApiRoutePath.location_LOCATIONID
         }>,
@@ -155,6 +160,9 @@ interface _RouteRoot extends ApiRoute {
 }
 
 const routes: _RouteRoot = {
+    ping: {
+        [HTTPMethod.GET]: ApiRoutePath.ping,
+    },
     auth: {
         authenticate: {
             [HTTPMethod.POST]: ApiRoutePath.auth_authenticate,
@@ -241,6 +249,7 @@ const routes: _RouteRoot = {
                     [HTTPMethod.DELETE]: ApiRoutePath.location_LOCATIONID_leader_LEADERID,
                 },
             },
+            [HTTPMethod.GET]:    ApiRoutePath.location_LOCATIONID,
             [HTTPMethod.PUT]:    ApiRoutePath.location_LOCATIONID,
             [HTTPMethod.DELETE]: ApiRoutePath.location_LOCATIONID,
         },

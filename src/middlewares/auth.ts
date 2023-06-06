@@ -30,11 +30,56 @@ export interface AuthMiddlewareOptions
     onMissingHandler?:    RequestHandler
     onExpiredHandler?:    RequestHandler
     onNotAllowedHandler?: RequestHandler
-    insecureFilter:       InsecureFilterFunc
-    accessFilters:        AccessFilterOption[]
 }
 
-export default function(options: AuthMiddlewareOptions): RequestHandler
+const insecureEndpoints: RegExp[] = []
+const accessFilters               = new Map<RegExp, AccessFilterFunc>()
+
+export function registerInsecurePathStubs(...paths: string[]): void
+{
+    for(const path of paths)
+        insecureEndpoints.push(pathToRegexp(new RegExp(`^${path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}.*$`)))
+}
+
+export function registerInsecurePaths(...paths: ApiRoutePath[]): void
+{
+    for(const path of paths)
+        insecureEndpoints.push(pathToRegexp(path))
+}
+
+export function registerInsecureEndpoint(path: ApiRoutePath): void
+{
+    insecureEndpoints.push(pathToRegexp(path))
+}
+
+export function registerEndpointAccess(path: ApiRoutePath, options: AccessFilterOption): void
+{
+    const regexp = pathToRegexp(path)
+
+    if('filter' in options)
+    {
+        accessFilters.set(regexp, options.filter)
+        return
+    }
+
+    const filterMethods     = Array.isArray(options.method)     ? options.method     : [options.method]
+    const filterPermissions = Array.isArray(options.permission) ? options.permission : [options.permission]
+    accessFilters.set(regexp, (req, token) =>
+    {
+        if(!filterMethods.includes(req.method as HTTPMethod))
+            return null
+
+        const userPerms = token.getPayloadField('prm')
+        for(const perm of filterPermissions)
+        {
+            if(userPerms.includes(perm))
+                return true
+        }
+        return false
+    })
+}
+
+export function middleware(options: AuthMiddlewareOptions): RequestHandler
 {
     const defaultHandler = (where: string, req: Request, res: Response) =>
     {
@@ -48,37 +93,12 @@ export default function(options: AuthMiddlewareOptions): RequestHandler
     options.onExpiredHandler    ??= (rq, rs) => defaultHandler('expired',    rq, rs)
     options.onNotAllowedHandler ??= (rq, rs) => defaultHandler('notallowed', rq, rs)
 
-    const accessFilters = new Map<RegExp, AccessFilterFunc>()
-    for(const value of options.accessFilters)
-    {
-        const regexp = pathToRegexp(value.path)
-
-        if('filter' in value)
-        {
-            accessFilters.set(regexp, value.filter)
-            continue
-        }
-
-        const filterMethods     = Array.isArray(value.method)     ? value.method     : [value.method]
-        const filterPermissions = Array.isArray(value.permission) ? value.permission : [value.permission]
-        accessFilters.set(regexp, (req, token) =>
-        {
-            if(!filterMethods.includes(req.method as HTTPMethod))
-                return null
-
-            const userPerms = token.getPayloadField('prm')
-            for(const perm of filterPermissions)
-            {
-                if(userPerms.includes(perm))
-                    return true
-            }
-            return false
-        })
-    }
-
     return function(req: Request, res: Response, next: NextFunction)
     {
-        if(options.insecureFilter(req))
+        for(const rx of insecureEndpoints)
+            log.info(`Insecure: ${rx}`)
+
+        if(insecureEndpoints.some(rx => rx.test(req.url)))
             return next()
 
         let token: Token
@@ -126,4 +146,12 @@ export default function(options: AuthMiddlewareOptions): RequestHandler
         res.locals.accessToken = token
         next()
     }
+}
+
+export default {
+    middleware,
+    registerEndpointAccess,
+    registerInsecureEndpoint,
+    registerInsecurePaths,
+    registerInsecurePathStubs,
 }

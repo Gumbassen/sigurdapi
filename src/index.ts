@@ -16,7 +16,7 @@ if(!fs.existsSync('./.env'))
 import log from './utils/logger'
 import swagger from 'swagger-ui-dist'
 import fsrecursivesearch from './utils/fsrecursivesearch'
-import authmw from './middlewares/auth'
+import auth from './middlewares/auth'
 import mapiterator from './utils/mapiterator'
 import database from './utils/database'
 import userpermissions from './utils/userpermissions'
@@ -53,48 +53,37 @@ app.use((req, res, next) =>
     next()
 })
 app.use(database.middleware())
-app.use(authmw({
-    insecureFilter: request =>
-    {
-        if([ '/auth/authenticate', '/auth/refresh' ].includes(request.url))
-            return true
-
-        if(request.url.startsWith('/swagger'))
-            return true
-
-        if(request.url.startsWith('/static'))
-            return true
-
-        return false
-    },
-    accessFilters: [],
-}))
+app.use(auth.middleware({}))
 
 
 // Swagger routes
+auth.registerInsecurePathStubs('/swagger', '/static')
 app.use('/swagger', express.static(swagger.absolutePath()))
 app.use('/static', express.static('./../static'))
 
 
 Promise.all([
     // Autoloads routes
-    Promise.all(mapiterator(fsrecursivesearch('./routes', ({ name }) => name === 'endpoint.js'), path =>
+    Promise.all(mapiterator(fsrecursivesearch('./routes', ({ name }) => name === 'endpoint.js'), async path =>
     {
-        const prefixRx       = /^\.\/routes((?:\/\w+)+)\/endpoint.js$/g
-        const prefixRxResult = prefixRx.exec(path)
-        if(prefixRxResult === null) return Promise.reject(`Invalid route path: ${path}`)
-        const prefix = prefixRxResult[1]
-
-        return import(path).then(module =>
+        try
         {
+            const prefixRx       = /^\.\/routes((?:\/\w+)+)\/endpoint.js$/g
+            const prefixRxResult = prefixRx.exec(path)
+            if(prefixRxResult === null) return Promise.reject(`Invalid route path: ${path}`)
+            const prefix = prefixRxResult[1]
+
+            const module = await import(path)
+
             log.verbose(`Autoloading route: "${prefix}" from "${path}"`)
             app.use(prefix, module.default)
-        }).catch(error => ({ error, path }))
-    })).catch(errors =>
-    {
-        for(const { error, path } of errors)
-            log.error(`Failed to import route endpoint file "${path}": "${error}"`)
-    }),
+        }
+        catch(error)
+        {
+            log.error(`Failed to import route endpoint file "${path}": "${String(error)}"`)
+            throw error
+        }
+    })),
 
     // Connects to MySQL
     database.initialize(),

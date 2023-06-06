@@ -17,6 +17,7 @@ export enum EUserRolePermission {
     'manage_all_users'        = 12,
     'manage_all_locations'    = 13,
     'manage_all_roles'        = 14,
+    'everyone'                = 15,
 }
 
 export type EUserRolePermissionName = keyof typeof EUserRolePermission
@@ -56,6 +57,7 @@ export const userRolePermissions = new Map<number, ApiDataTypes.Objects.UserRole
     { Id: EUserRolePermission.manage_all_users,        Description: 'Can manage all users.' },
     { Id: EUserRolePermission.manage_all_locations,    Description: 'Can manage all locations.' },
     { Id: EUserRolePermission.manage_all_roles,        Description: 'Can manage all roles.' },
+    { Id: EUserRolePermission.everyone,                Description: 'Default, ie. no special permissions.' },
 ].map(p => [ p.Id, { Id: p.Id, Name: EUserRolePermission.getNameOf(p.Id), Description: p.Description } ]))
 
 export async function verifyDatabase(): Promise<void>

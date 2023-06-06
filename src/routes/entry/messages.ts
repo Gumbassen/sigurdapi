@@ -1,13 +1,15 @@
 
-import express, { Request, Response } from 'express'
+import { Request, Response } from 'express'
 import log from './../../utils/logger'
 import { error } from '../../utils/common'
 import { fetchTimeEntryMessages } from '../../utils/fetchfunctions'
 import { escape, sql, sqlMulti, unsafe } from '../../utils/database'
+import { UnlockedEndpointRouter } from '../../utils/endpoint'
+import { EUserRolePermission } from '../../utils/userpermissions'
+import routes from '../../utils/ApiRoutes'
 
-export default function(router: express.Router)
-{
-    router.post('/:entryId/messages', async (req: Request, res: Response) =>
+export default (router: UnlockedEndpointRouter): UnlockedEndpointRouter => router
+    .SecurePost(EUserRolePermission.comment_own_entries, routes.entry._entryId_.messages.POST).addHandler(async (req: Request, res: Response) =>
     {
         const token     = res.locals.accessToken!
         const companyId = token.getPayloadField('cid')
@@ -105,9 +107,8 @@ export default function(router: express.Router)
             log.error(_error)
             error(res, 500, 'Unknown error')
         }
-    })
-    
-    router.get('/:entryId/messages', async (req: Request, res: Response) =>
+    }).done()
+    .SecureGet(EUserRolePermission.see_own_entries, routes.entry._entryId_.messages.GET).addHandler(async (req: Request, res: Response) =>
     {
         const token   = res.locals.accessToken!
         const entryId = Number.parseInt(req.params.entryId)
@@ -121,5 +122,4 @@ export default function(router: express.Router)
         )
         
         res.send(Array.from(messages.values()))
-    })
-}
+    }).done()
