@@ -122,6 +122,7 @@ interface _RouteRoot extends ApiRoute {
                     [HTTPMethod.DELETE]: ApiRoutePath.location_LOCATIONID_leader_LEADERID
                 }>
             }>
+            [HTTPMethod.GET]:    ApiRoutePath.location_LOCATIONID
             [HTTPMethod.PUT]:    ApiRoutePath.location_LOCATIONID
             [HTTPMethod.DELETE]: ApiRoutePath.location_LOCATIONID
         }>,
@@ -241,6 +242,7 @@ const routes: _RouteRoot = {
                     [HTTPMethod.DELETE]: ApiRoutePath.location_LOCATIONID_leader_LEADERID,
                 },
             },
+            [HTTPMethod.GET]:    ApiRoutePath.location_LOCATIONID,
             [HTTPMethod.PUT]:    ApiRoutePath.location_LOCATIONID,
             [HTTPMethod.DELETE]: ApiRoutePath.location_LOCATIONID,
         },
