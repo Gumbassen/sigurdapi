@@ -1902,6 +1902,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserRole"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "The user-role has been updated",
