@@ -1,9 +1,8 @@
 import express, { Request, Response } from 'express'
 import endpoint from '../../utils/endpoint'
 import log from './../../utils/logger'
-import { sql, unsafe, escape } from '../../utils/database'
 import { error } from '../../utils/common'
-import { FetchTimeEntriesDateOption, FetchTimeEntriesNumberOption, FetchTimeEntriesOption } from '../../utils/fetchfunctions'
+import { FetchTimeEntriesDateOption, FetchTimeEntriesNumberOption, FetchTimeEntriesOption, fetchTimeEntries } from '../../utils/fetchfunctions'
 import { digitStringRx, pipeDelimitedNumbersRx } from '../../utils/regexes'
 
 const router = express.Router()
@@ -133,23 +132,7 @@ router.get('/', async (req: Request, res: Response) =>
         return error(res, 500, 'Param "fulfillsRule" is not implemented')
     }
 
-    const result = await sql`
-        SELECT
-            Id,
-            UserId,
-            UNIX_TIMESTAMP(Start) AS 'Start',
-            UNIX_TIMESTAMP(End)   AS 'End',
-            Duration,
-            GroupingId,
-            LocationId,
-            TimeEntryTypeId
-        FROM
-            timeentries
-        WHERE
-            CompanyId = ${escape(companyId)}
-            AND (${unsafe(queryClauses.join(') AND ('))})`
-
-    res.send(JSON.stringify(result))
+    res.send(Array.from((await fetchTimeEntries(companyId, queryClauses)).values()))
 })
 
 export default endpoint(router, {})
