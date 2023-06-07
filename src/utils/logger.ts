@@ -39,6 +39,7 @@ if(process.env.LOG_PERSISTENT_EXCEPTIONS !== '0')
 
 log.add(new winston.transports.Console({
     format: winston.format.combine(
+        winston.format(info => info?.error !== undefined ? info : false)(),
         winston.format.json(),
         winston.format.errors({ stack: true }),
         winston.format.prettyPrint({ colorize: true }),
@@ -47,11 +48,35 @@ log.add(new winston.transports.Console({
     handleExceptions: true,
 }))
 
+log.add(new winston.transports.Console({
+    format: (() =>
+    {
+        const objForm = winston.format.combine(
+            winston.format.json(),
+            winston.format.prettyPrint({ colorize: true })
+        )
+
+        const cliForm = winston.format.combine(
+            winston.format.colorize({ all: true }),
+            winston.format.cli()
+        )
+
+        return winston.format((info, opts) =>
+        {
+            if(typeof info.message === 'object')
+                return objForm.transform(info, opts)
+            return cliForm.transform(info, opts)
+        })()
+    })(),
+    level: 'error',
+}))
+
 if(process.env.NODE_ENV !== 'production')
 {
     // Only write to console if not in production
     log.add(new winston.transports.Console({
         format: winston.format.combine(
+            winston.format(info => info.level == 'error' ? false : info)(), // Hides errors, as they are handled above
             winston.format.colorize({ all: true }),
             winston.format.cli(),
         ),
