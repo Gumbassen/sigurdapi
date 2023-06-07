@@ -55,6 +55,7 @@
  - __[GET]__ /role
  - __[POST]__ /role
  - __[GET]__ /role/__{roleId}__
+ - __[PUT]__ /role/__{roleId}__
  - __[DELETE]__ /role/__{roleId}__
  - __[GET]__ /role/__{roleId}__/permission
  - __[POST]__ /role/__{roleId}__/permission/__{permissionId}__
