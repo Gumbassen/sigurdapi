@@ -15,7 +15,8 @@ if(!fs.existsSync('./.env'))
 }
 
 import log from './utils/logger'
-import swagger from 'swagger-ui-dist'
+import swaggerUi from 'swagger-ui-express'
+import swaggerDefinitions from './static/openapi.json'
 import fsrecursivesearch from './utils/fsrecursivesearch'
 import authmw from './middlewares/auth'
 import mapiterator from './utils/mapiterator'
@@ -73,8 +74,7 @@ app.use(authmw({
 
 
 // Swagger routes
-app.use('/swagger', express.static(swagger.absolutePath()))
-app.use('/static', express.static('./../static'))
+app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerDefinitions))
 
 
 Promise.all([
