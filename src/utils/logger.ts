@@ -31,8 +31,6 @@ function createFileLoggerTransport(levels: LOG_LEVELS[], filename: string)
         for(let i = 0; typeof logObj[i] !== 'undefined'; i++)
             msg += logObj[i]
 
-        
-
         fs.appendFileSync(
             file,
             `[${logObj._meta.date.format('yyyy-mm-dd hh:ii:ss.uuu')}] ${logObj._meta.logLevelName}: ${msg}\n`,
