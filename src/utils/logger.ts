@@ -1,10 +1,109 @@
 import fs from 'fs'
-import { dirname } from 'path'
+import { hostname } from 'os'
+import { dirname, normalize } from 'path'
 import { Logger, ILogObj } from 'tslog'
-import { ILogObjMeta } from 'tslog/dist/types/interfaces'
+import { ILogObjMeta, ISettings, IStackFrame } from 'tslog/dist/types/interfaces'
+import { IMeta, IMetaStatic } from 'tslog/dist/types/runtime/nodejs'
 
-const logsDir = dirname(require.main!.filename) + '/../logs/'
-const logger: Logger<ILogObj> = new Logger()
+
+const rootDir        = normalize(dirname(require.main!.filename) + '/..')
+const rootDirWoDrive = normalize(rootDir.replace(/^[a-zA-Z]:/, ''))
+const logsDir        = normalize(rootDir + '/logs')
+const logger: Logger<ILogObj> = new Logger({
+    overwrite: {
+        addMeta: (() =>
+        {
+            const meta: IMetaStatic = {
+                runtime:        'NodeJS',
+                runtimeVersion: process.version,
+                hostname:       hostname(),
+            }
+            const stackDepthLevel = 5
+
+            const stackLineToStackFrame = (line?: string): IStackFrame =>
+            {
+                const pathResult: IStackFrame = {
+                    fullFilePath:     undefined,
+                    fileName:         undefined,
+                    fileNameWithLine: undefined,
+                    fileColumn:       undefined,
+                    fileLine:         undefined,
+                    filePath:         undefined,
+                    filePathWithLine: undefined,
+                    method:           undefined,
+                }
+
+                if (line != null && line.includes('    at '))
+                {
+                    line = line.replace(/^\s+at\s+/gm, '')
+
+                    const errorStackLine = line.split(' (')
+
+                    const fullFilePath = line?.slice(-1) === ')'
+                        ? line?.match(/\(([^)]+)\)/)?.[1]
+                        : line
+
+                    const pathArray = fullFilePath?.includes(':')
+                        ? fullFilePath?.replace('file://', '')?.replace(process.cwd(), '')?.split(':')
+                        : undefined
+
+                    // Order plays a role, runs from the back: column, line, path
+                    const fileColumn       = pathArray?.pop()
+                    const fileLine         = pathArray?.pop()
+                    const filePath         = pathArray?.pop()
+                    const filePathWithLine = normalize(`${filePath}:${fileLine}`)
+                    const fileName         = filePath?.split('/')?.pop()
+                    const fileNameWithLine = `${fileName}:${fileLine}`
+
+                    if (filePath != null && filePath.length > 0)
+                    {
+                        pathResult.fullFilePath     = fullFilePath
+                        pathResult.fileName         = fileName
+                        pathResult.fileNameWithLine = fileNameWithLine
+                        pathResult.fileColumn       = fileColumn
+                        pathResult.fileLine         = fileLine
+                        pathResult.filePath         = filePath
+                        pathResult.filePathWithLine = filePathWithLine
+                        pathResult.method           = errorStackLine?.[1] != null ? errorStackLine?.[0] : undefined
+                    }
+                }
+                return pathResult
+            }
+
+            const getCallerStackFrame = (stackDepthLevel: number, error: Error = Error()): IStackFrame =>
+                // eslint-disable-next-line no-extra-parens
+                stackLineToStackFrame((error as Error | undefined)?.stack?.split('\n')?.filter((thisLine: string) => thisLine.includes('    at '))?.[stackDepthLevel])
+
+            const addMeta = (settings: ISettings<ILogObj>, logObj: ILogObj, logLevelId: number, logLevelName: string): ILogObj & ILogObjMeta => ({
+                ...logObj,
+                [settings.metaProperty]: Object.assign({}, meta, {
+                    name:         settings.name,
+                    parentNames:  settings.parentNames,
+                    date:         new Date(),
+                    logLevelId:   logLevelId,
+                    logLevelName: logLevelName,
+                    path:         !settings.hideLogPositionForProduction ? getCallerStackFrame(stackDepthLevel) : undefined,
+                }) as IMeta,
+            }) as ILogObj & ILogObjMeta
+
+            return (logObj, logLevelId, logLevelName) =>
+            {
+                const obj = addMeta(logger.settings, logObj, logLevelId, logLevelName)
+
+                if(obj._meta.path)
+                {
+                    if(obj._meta.path.filePath)
+                        obj._meta.path.filePath = obj._meta.path.filePath.replace(rootDirWoDrive, '')
+
+                    if(obj._meta.path.filePathWithLine)
+                        obj._meta.path.filePathWithLine = obj._meta.path.filePathWithLine.replace(rootDirWoDrive, '')
+                }
+
+                return obj
+            }
+        })(),
+    },
+})
 
 export const enum LOG_LEVELS {
     SILLY   = 0,
@@ -19,7 +118,7 @@ export const enum LOG_LEVELS {
 
 function createFileLoggerTransport(levels: LOG_LEVELS[], filename: string)
 {
-    const file = logsDir + filename
+    const file = normalize(`${logsDir}/${filename}`)
     if(!fs.existsSync(logsDir)) fs.mkdirSync(logsDir)
     if(!fs.existsSync(file)) fs.writeFileSync(file, '', { encoding: 'utf-8', flag: 'a' })
 
