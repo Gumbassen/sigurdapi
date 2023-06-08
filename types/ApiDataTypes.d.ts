@@ -62,19 +62,8 @@ declare namespace ApiDataTypes {
             CompanyId:   number
             Name:        string
             BasisAmount: number
-            BasisType:   number
+            BasisType:   string
             RuleIds:     number[]
-        }
-
-        enum TimetagRuleWeekday {
-            'Monday',
-            'Tuesday',
-            'Wednesday',
-            'Thursday',
-            'Friday',
-            'Saturday',
-            'Sunday',
-            'Holiday',
         }
 
         interface TimetagRule {
@@ -88,7 +77,7 @@ declare namespace ApiDataTypes {
             /** Counted in seconds passed since midnight */
             ToTime:    number
             Amount:    number
-            Weekdays:  TimetagRuleWeekday[]
+            Weekdays:  import('../src/utils/timetagweekdays').ETimetagWeekday[]
         }
 
         interface FullTimetag extends Timetag {

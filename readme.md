@@ -40,6 +40,7 @@
 
 ## Timetag
  - __[GET]__ /timetag
+ - __[POST]__ /timetag
  - __[GET]__ /timetag/__{timeTagId}__
  - __[GET]__ /timetag/__{timeTagId}__/rules  
  Sender tomt array selvom der ikke findes et TimeTag med det givne ID.

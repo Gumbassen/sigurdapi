@@ -818,6 +818,26 @@ export async function fetchTimetags(companyId: number, field: 'Id' | 'None' = 'N
     return tags
 }
 
+export async function fetchFullTimetag(companyId: number, timetagId: number): Promise<ApiDataTypes.Objects.FullTimetag>
+{
+    const timetag = (await fetchTimetags(companyId, 'Id', [timetagId])).get(timetagId)
+
+    if(!timetag)
+        throw new SQLNoResultError(`[CID=${companyId}] Timetag ID "${timetagId}" not found`)
+
+    const rules = await fetchTimetagRules(companyId, 'TimeTagId', [timetagId])
+
+    return {
+        Id:          timetagId,
+        CompanyId:   companyId,
+        Name:        timetag.Name,
+        BasisType:   timetag.BasisType,
+        BasisAmount: timetag.BasisAmount,
+        RuleIds:     Array.from(rules.keys()),
+        Rules:       Array.from(rules.values()),
+    }
+}
+
 /**
  * Returned map is indexed by LocationId, not UserId.
  */
