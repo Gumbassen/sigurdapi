@@ -102,3 +102,67 @@ Array.prototype.equals = function<T>(this: T[], array: T[]): boolean
     
     return hashArrayEquals(this, array)
 }
+
+String.prototype.padZero = function(maxLength: number): string
+{
+    return this.padStart(maxLength, '0')
+}
+
+const WEEKDAY_NAMES_LUT = [
+    '', // Is here to make the array 1-indexed as the day code is 1-7
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+]
+const MONTH_NAMES_LUT = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+]
+const WEEKDAY_NAMES_SHORT_LUT = WEEKDAY_NAMES_LUT.map(name => name.substring(0, 3))
+const MONTH_NAMES_SHORT_LUT   = MONTH_NAMES_LUT.map(name => name.substring(0, 3))
+Date.prototype.format = function(format: string): string
+{
+    return format.replace(
+        /yyyy|yy|mm|dd|hh|ii|ss|fwd|swd|uuu|fmn|smn|tz/g,
+        matched =>
+        {
+            switch(matched)
+            {
+                default:     return matched
+                case 'yyyy': return String(this.getFullYear())
+                case 'yy':   return String(this.getFullYear()).substr(-2)
+                case 'mm':   return String(this.getMonth() + 1).padZero(2)
+                case 'dd':   return String(this.getDate()).padZero(2)
+                case 'hh':   return String(this.getHours()).padZero(2)
+                case 'ii':   return String(this.getMinutes()).padZero(2)
+                case 'ss':   return String(this.getSeconds()).padZero(2)
+                case 'fwd':  return WEEKDAY_NAMES_LUT[this.getDay()]
+                case 'swd':  return WEEKDAY_NAMES_SHORT_LUT[this.getDay()]
+                case 'uuu':  return (String(this.getMilliseconds()) + '000').substr(0, 3)
+                case 'fmn':  return MONTH_NAMES_LUT[this.getMonth()]
+                case 'smn':  return MONTH_NAMES_SHORT_LUT[this.getMonth()]
+                case 'tz': {
+                    const absOffset     = Math.abs(this.getTimezoneOffset())
+                    const offsetHours   = Math.floor(absOffset / 60)
+                    const offsetMinutes = absOffset % 60
+                    const sign          = this.getTimezoneOffset() < 0 ? '-' : '+'
+                    return `${sign}${String(offsetHours).padZero(2)}${String(offsetMinutes).padZero(2)}`
+                }
+            }
+        }
+    )
+}

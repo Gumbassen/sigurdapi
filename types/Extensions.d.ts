@@ -28,3 +28,32 @@ declare interface Array<T> {
      */
     sortedEquals(array: T[]): boolean
 }
+
+declare interface String {
+    /**
+     * Alias for String.padStart(maxLength, '0').
+     */
+    padZero(maxLength: number): string
+}
+
+declare interface Date {
+    /**
+     * Returns a string with the date formatted as requested.
+     * 
+     * Available formatting options:
+     *  - yyyy: Full 4-digit year
+     *  - yy:   Short 2-digit year
+     *  - mm:   Zero-padded month number
+     *  - dd:   Zero-padded date number
+     *  - hh:   Zero-padded hours
+     *  - ii:   Zero-padded minutes
+     *  - ss:   Zero-padded seconds
+     *  - fwd:  Full weekday name
+     *  - swd:  Short weekday name (3 characters)
+     *  - uuu:  Zero-padded milliseconds (3-digits)
+     *  - fmn:  Full month name
+     *  - smn:  Short month name
+     *  - tz:   Timezone offset with sign
+     */
+    format(format: string): string
+}
