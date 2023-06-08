@@ -25,10 +25,13 @@ import userpermissions from './utils/userpermissions'
 
 if(usingDotenvExample)
 {
-    log.warn('##############################################')
-    log.warn('# Using ".env.example" as ".env" is missing! #')
-    log.warn('##############################################')
-    log.warn('Please create a copy of ".env.example" and rename it to ".env"')
+    log.warn('\n'
+        + '##################################################\n'
+        + '#                                                #\n'
+        + '#   Using ".env.example" as ".env" is missing!   #\n'
+        + '#                                                #\n'
+        + '##################################################\n'
+        + 'Please create a copy of ".env.example" and rename it to ".env"')
 }
 
 
