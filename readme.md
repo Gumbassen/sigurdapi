@@ -47,6 +47,7 @@
  Sender tomt array selvom der ikke findes et TimeTag med det givne ID.
  - __[POST]__ /timetag/__{timeTagId}__/rules  
  - __[GET]__ /timetag/__{timeTagId}__/rules/__{ruleId}__
+ - __[DELETE]__ /timetag/__{timeTagId}__/rules/__{ruleId}__
 
 ## Location
  - __[GET]__ /location
