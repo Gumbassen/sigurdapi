@@ -8,11 +8,19 @@ export class SQLNoResultError extends Error
     }
 }
 
-export function csNumberRow(value: string): number[]
+export function csNumberRow(value: string | null | undefined): number[]
 {
-    return value.split(',')
+    if(value == null)
+        return []
+
+    const ids = value.split(',')
         .filter(id => id !== '')
         .map(id => Number.parseInt(id))
+
+    if(ids.some(id => Number.isNaN(id)))
+        throw new Error(`String '${value}' was parsed to [${ids.join(', ')}] which contains NaN.`)
+
+    return ids
 }
 
 function collapseClauses(clauses: string[]): string
@@ -745,7 +753,7 @@ export async function fetchTimetagRules(companyId: number, field: 'Id' | 'TimeTa
             FromTime:  row.FromTime,
             ToTime:    row.ToTime,
             Amount:    row.Amount,
-            Weekdays:  row.Weekdays.split(',').filter((x: string) => x !== ''),
+            Weekdays:  (row.Weekdays ?? '').split(',').filter((x: string) => x !== ''),
         })
     }
 
@@ -825,17 +833,7 @@ export async function fetchFullTimetag(companyId: number, timetagId: number): Pr
     if(!timetag)
         throw new SQLNoResultError(`[CID=${companyId}] Timetag ID "${timetagId}" not found`)
 
-    const rules = await fetchTimetagRules(companyId, 'TimeTagId', [timetagId])
-
-    return {
-        Id:          timetagId,
-        CompanyId:   companyId,
-        Name:        timetag.Name,
-        BasisType:   timetag.BasisType,
-        BasisAmount: timetag.BasisAmount,
-        RuleIds:     Array.from(rules.keys()),
-        Rules:       Array.from(rules.values()),
-    }
+    return timetag
 }
 
 /**

@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express'
 import endpoint from '../../utils/endpoint'
-import { fetchFullTimetag, fetchTimetagRules, fetchTimetags } from '../../utils/fetchfunctions'
+import { SQLNoResultError, fetchFullTimetag, fetchTimetagRules, fetchTimetags } from '../../utils/fetchfunctions'
 import { error } from '../../utils/common'
 import { ETimetagWeekday } from '../../utils/timetagweekdays'
 import log from '../../utils/logger'
@@ -223,6 +223,43 @@ router.get('/:timeTagId', async (req: Request, res: Response) =>
         return error(res, 404, 'Timetag not found')
 
     res.send(timetags.get(timetagId))
+})
+
+router.delete('/:timeTagId', async (req: Request, res: Response) =>
+{
+    const token     = res.locals.accessToken!
+    const companyId = token.getPayloadField('cid')
+    const timetagId = Number.parseInt(req.params.timeTagId)
+
+    if(Number.isNaN(timetagId))
+        return error(res, 400, 'Invalid URL')
+
+    try
+    {
+        const timetag = await fetchFullTimetag(companyId, timetagId)
+
+        const result = await sql`
+            DELETE FROM
+                timetags
+            WHERE
+                CompanyId = ${companyId}
+                AND Id = ${timetag.Id}
+            LIMIT 1`
+
+        if(result.affectedRows < 1)
+            return error(res, 500, 'Failed to delete timetag')
+
+        log.silly(`Timetag was deleted:\n${JSON.stringify(timetag, null, 2)}`)
+
+        res.sendStatus(204)
+    }
+    catch(_error)
+    {
+        if(!(_error instanceof SQLNoResultError))
+            throw _error
+
+        error(res, 404, 'Timetag not found')
+    }
 })
 
 router.get('/:timeTagId/rules', async (req: Request, res: Response) =>
