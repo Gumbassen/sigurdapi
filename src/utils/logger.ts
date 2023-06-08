@@ -65,25 +65,27 @@ if(process.env.LOG_PERSISTENT_DEBUG !== '0')
 
 interface WinstonLikeLogger
 {
-    silly:   (...args: unknown[]) => undefined
-    debug:   (...args: unknown[]) => undefined
-    verbose: (...args: unknown[]) => undefined
-    http:    (...args: unknown[]) => undefined
-    info:    (...args: unknown[]) => undefined
-    warn:    (...args: unknown[]) => undefined
-    error:   (...args: unknown[]) => undefined
-    fatal:   (...args: unknown[]) => undefined
+    silly:   (...args: unknown[]) => (ILogObj & ILogObjMeta) | undefined
+    debug:   (...args: unknown[]) => (ILogObj & ILogObjMeta) | undefined
+    verbose: (...args: unknown[]) => (ILogObj & ILogObjMeta) | undefined
+    http:    (...args: unknown[]) => (ILogObj & ILogObjMeta) | undefined
+    info:    (...args: unknown[]) => (ILogObj & ILogObjMeta) | undefined
+    warn:    (...args: unknown[]) => (ILogObj & ILogObjMeta) | undefined
+    error:   (...args: unknown[]) => (ILogObj & ILogObjMeta) | undefined
+    fatal:   (...args: unknown[]) => (ILogObj & ILogObjMeta) | undefined
 }
 
 const exported: WinstonLikeLogger = {
-    silly:   (...args: unknown[]) => void logger.log(0, 'SILLY',   ...args),
-    debug:   (...args: unknown[]) => void logger.log(1, 'DEBUG',   ...args),
-    verbose: (...args: unknown[]) => void logger.log(2, 'VERBOSE', ...args),
-    http:    (...args: unknown[]) => void logger.log(3, 'HTTP',    ...args),
-    info:    (...args: unknown[]) => void logger.log(4, 'INFO',    ...args),
-    warn:    (...args: unknown[]) => void logger.log(5, 'WARN',    ...args),
-    error:   (...args: unknown[]) => void logger.log(6, 'ERROR',   ...args),
-    fatal:   (...args: unknown[]) => void logger.log(7, 'FATAL',   ...args),
+    /* eslint-disable brace-style */
+    get silly()   { return logger.log.bind(logger, 0, 'SILLY') },
+    get debug()   { return logger.log.bind(logger, 1, 'DEBUG') },
+    get verbose() { return logger.log.bind(logger, 2, 'VERBOSE') },
+    get http()    { return logger.log.bind(logger, 3, 'HTTP') },
+    get info()    { return logger.log.bind(logger, 4, 'INFO') },
+    get warn()    { return logger.log.bind(logger, 5, 'WARN') },
+    get error()   { return logger.log.bind(logger, 6, 'ERROR') },
+    get fatal()   { return logger.log.bind(logger, 7, 'FATAL') },
+    /* eslint-enable brace-style */
 }
 
 process.on('uncaughtException',  exception => exported.fatal('Uncaught exception:',  exception))
