@@ -149,14 +149,12 @@ router.post('/', async (req: Request, res: Response) =>
         FROM
             timetags
         WHERE
-            CompanyId = ${companyId}
+            CompanyId = ${escape(companyId)}
             AND Name = ${escape(timetag.Name)}
     ) AS Name `)
 
     if(permissionChecks.size)
     {
-        log.info(permissionChecks)
-
         const result = await sql`SELECT ${unsafe(Array.from(permissionChecks.values()).join(','))}`
 
         for(const prop of permissionChecks.keys())
@@ -180,10 +178,10 @@ router.post('/', async (req: Request, res: Response) =>
     
     if(rules.length)
     {
-        const insertValues: string[] = []
+        const insertRules: string[] = []
         for(const rule of rules)
         {
-            insertValues.push(`(${[
+            insertRules.push(`(${[
                 escape(companyId),
                 escape(timetagId),
                 escape(rule.Name),
@@ -194,15 +192,35 @@ router.post('/', async (req: Request, res: Response) =>
             ].join(',')})`)
         }
 
-        await sql`
+        // MySQL locks the table when inserting.
+        // This means that the inserted rows are guaranteed to have sequential IDs in the same order as given.
+        const result = await sql`
             INSERT INTO
                 timetag_rules
                 (CompanyId, TimeTagId, Name, Type, FromTime, ToTime, Amount)
             VALUES
-                ${unsafe(insertValues.join(','))}`
+                ${unsafe(insertRules.join(','))}`
+
+        // This is important, because I can calculate and apply the IDs of the every inserted row like this:
+        for(let i = result.insertId; i < result.insertId + result.affectedRows; i++)
+            rules[i - result.insertId].Id = i
+
+        const insertWeekdays: string[] = []
+        for(const rule of rules)
+        {
+            for(const weekday of rule.Weekdays)
+                insertWeekdays.push(`(${escape(rule.Id)},${escape(weekday)})`)
     }
 
-    res.send(await fetchFullTimetag(companyId, timetagId))
+        await sql`
+            INSERT INTO
+                x_timetag_rule_weekdays
+                (TimeTagRuleId, Weekday)
+            VALUES
+                ${unsafe(insertWeekdays.join(','))}`
+    }
+
+    res.status(201).send(await fetchFullTimetag(companyId, timetagId))
 })
 
 router.get('/:timeTagId', async (req: Request, res: Response) =>
