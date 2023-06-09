@@ -1,10 +1,8 @@
-
-import express, { Request, Response } from 'express'
-import log from './../../utils/logger'
-import { fetchTimeEntries } from '../../utils/fetchfunctions'
+import { Router, Request, Response } from 'express'
 import { error } from '../../utils/common'
+import { fetchTimeEntries } from '../../utils/fetchfunctions'
 
-export default function(router: express.Router)
+export default function(router: Router)
 {
     router.get('/:entryId', async (req: Request, res: Response) =>
     {
@@ -23,17 +21,5 @@ export default function(router: express.Router)
             return error(res, 404, 'Time entry not found')
 
         res.send(entries.get(entryId)!)
-    })
-
-    router.put('/:entryId', (req: Request, res: Response) =>
-    {
-        log.info(`Stub ${req.method} handler for "${req.baseUrl + req.url}"`)
-        res.send('Placeholder handler')
-    })
-
-    router.delete('/:entryId', (req: Request, res: Response) =>
-    {
-        log.info(`Stub ${req.method} handler for "${req.baseUrl + req.url}"`)
-        res.send('Placeholder handler')
     })
 }

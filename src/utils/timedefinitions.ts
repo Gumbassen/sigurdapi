@@ -1,0 +1,5 @@
+
+export const ONE_MINUTE_SECONDS = 60
+export const ONE_HOUR_SECONDS   = 60 * ONE_MINUTE_SECONDS
+export const ONE_DAY_SECONDS    = 24 * ONE_HOUR_SECONDS
+export const ONE_WEEK_SECONDS   =  7 * ONE_DAY_SECONDS

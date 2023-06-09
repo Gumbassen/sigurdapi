@@ -22,6 +22,7 @@ import authmw from './middlewares/auth'
 import mapiterator from './utils/mapiterator'
 import database from './utils/database'
 import userpermissions from './utils/userpermissions'
+import nocache from 'nocache'
 
 if(usingDotenvExample)
 {
@@ -53,8 +54,7 @@ app.set('etag', false)
 app.use(express.json())
 app.use((req, res, next) =>
 {
-    log.debug(`[HTTP] [${req.method}] ${req.url}`)
-    log.debug(`Body: ${JSON.stringify(req.body, null, 2)}`)
+    log.http(`[${req.method}] ${req.url}\nBody: `, req.body)
     next()
 })
 app.use(database.middleware())
@@ -92,7 +92,10 @@ Promise.all([
         return import(path).then(module =>
         {
             log.verbose(`Autoloading route: "${prefix}" from "${path}"`)
-            app.use(prefix, module.default)
+            const router = express.Router()
+            router.use(nocache())
+            module.default(router)
+            app.use(prefix, router)
         }).catch(error => ({ error, path }))
     })).catch(errors =>
     {

@@ -1,14 +1,10 @@
 
-import express, { Request, Response } from 'express'
-import endpoint from '../../utils/endpoint'
+import { Router, Request, Response } from 'express'
 
-const router = express.Router()
-
-
-router.all('/', (req: Request, res: Response) =>
+export default function(router: Router)
 {
-    res.send('pong')
-})
-
-
-export default endpoint(router, {})
+    router.all('/', (req: Request, res: Response) =>
+    {
+        res.send('pong')
+    })
+}

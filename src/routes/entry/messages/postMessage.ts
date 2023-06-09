@@ -1,9 +1,7 @@
-
 import express, { Request, Response } from 'express'
-import log from './../../utils/logger'
-import { error } from '../../utils/common'
-import { fetchTimeEntryMessages } from '../../utils/fetchfunctions'
-import { escape, sql, sqlMulti, unsafe } from '../../utils/database'
+import log from '../../../utils/logger'
+import { error } from '../../../utils/common'
+import { escape, sql, sqlMulti, unsafe } from '../../../utils/database'
 
 export default function(router: express.Router)
 {
@@ -18,26 +16,26 @@ export default function(router: express.Router)
             return error(res, 400, 'Invalid URL')
 
         const requiredProps: (keyof ApiDataTypes.Objects.TimeEntryMessage)[] = ['Message']
-    
+
         const optionalProps: (keyof ApiDataTypes.Objects.TimeEntryMessage)[] = []
-    
+
         // @ts-expect-error Im using this to build the object
         const messageObj: ApiDataTypes.Objects.TimeEntryMessage = {
             CompanyId:   companyId,
             UserId:      userId,
             TimeEntryId: entryId,
         }
-    
+
         for(const field of requiredProps.concat(optionalProps))
         {
             if(!(field in req.body) || req.body[field] === null)
             {
                 if(optionalProps.includes(field))
                     continue
-    
+
                 return error(res, 400, `Param "${field}" is required.`)
             }
-    
+
             const value = req.body[field]
             switch(field)
             {
@@ -46,7 +44,7 @@ export default function(router: express.Router)
                     break
             }
         }
-    
+
         const permissionChecks = new Map<string, string>()
         if(messageObj.TimeEntryId)
         {
@@ -62,11 +60,11 @@ export default function(router: express.Router)
                 ) AS TimeEntryId `
             )
         }
-    
+
         if(permissionChecks.size)
         {
             const result = await sql`SELECT ${unsafe(Array.from(permissionChecks.values()).join(','))}`
-    
+
             for(const prop of permissionChecks.keys())
             {
                 if(result[0][prop] !== 1)
@@ -97,7 +95,7 @@ export default function(router: express.Router)
             messageObj.CreatedAt = result.CreatedAt
 
             log.silly(`Time entry message was created:\n${JSON.stringify(messageObj, null, 2)}`)
-        
+
             res.status(201).send(messageObj)
         }
         catch(_error)
@@ -105,21 +103,5 @@ export default function(router: express.Router)
             log.error(_error)
             error(res, 500, 'Unknown error')
         }
-    })
-    
-    router.get('/:entryId/messages', async (req: Request, res: Response) =>
-    {
-        const token   = res.locals.accessToken!
-        const entryId = Number.parseInt(req.params.entryId)
-
-        if(Number.isNaN(entryId))
-            return error(res, 400, 'Invalid URL')
-
-        const messages = await fetchTimeEntryMessages(
-            token.getPayloadField('cid'),
-            entryId
-        )
-        
-        res.send(Array.from(messages.values()))
     })
 }
