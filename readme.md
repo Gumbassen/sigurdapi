@@ -8,7 +8,7 @@
 
 # Funktionelle endpoints
 
-## Auth
+## Auth [_Finished_]
  - __[POST]__ /auth/authenticate
  - __[POST]__ /auth/refresh
 
@@ -21,7 +21,7 @@
    Sender tomt array selvom der ikke findes en User med det givne ID.
  - __[POST]__ /entry/__{entryId}__/messages
 
-## User
+## User [_Finished_]
  - __[GET]__ /users
  - __[GET]__ /user/current
  - __[GET]__ /user
@@ -38,7 +38,7 @@
  - __[GET]__ /user/__{userId}__/tagcollections/__{collectionId}__
  - __[DELETE]__ /user/__{userId}__/tagcollections/__{collectionId}__
 
-## Timetag
+## Timetag [_Finished_]
  - __[GET]__ /timetag
  - __[POST]__ /timetag
  - __[GET]__ /timetag/__{timeTagId}__
@@ -56,7 +56,7 @@
  - __[GET]__ /location/__{locationId}__/users
  - __[GET]__ /location/__{locationId}__/leaders
 
-## Role
+## Role [_Finished_]
  - __[GET]__ /role
  - __[POST]__ /role
  - __[GET]__ /role/__{roleId}__
