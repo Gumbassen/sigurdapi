@@ -24,6 +24,7 @@ import database from './utils/database'
 import userpermissions from './utils/userpermissions'
 import nocache from 'nocache'
 import requestlog from './middlewares/requestlog'
+import notfound404 from './middlewares/notfound404'
 
 if(usingDotenvExample)
 {
@@ -109,6 +110,9 @@ Promise.all([
     return userpermissions.verifyDatabase()
 }).then(() =>
 {
+    // In order to handle 404 for pages that doesnt exist, I have to add the middleware as the last in the stack.
+    app.use(notfound404())
+
     // Start the server
     app.listen(port, () =>
     {
