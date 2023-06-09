@@ -9,3 +9,5 @@ type PickOptional<T> = Pick<T, OptionalKeys<T>>
 type NullableifyObject<T> = { [P in keyof T]: T[P] | null }
 
 type NullableOptionals<T> = PickRequired<T> & Nullableify<T>
+
+type NullablePartial<T> = { [P in keyof T]?: T[P] | null }

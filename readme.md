@@ -17,6 +17,7 @@
  Mangler "fulfillsTag" og "fulfillsRule".
  - __[POST]__ /entry
  - __[GET]__ /entry/__{entryId}__
+ - __[PUT]__ /entry/__{entryId}__
  - __[GET]__ /entry/__{entryId}__/messages  
    Sender tomt array selvom der ikke findes en User med det givne ID.
  - __[POST]__ /entry/__{entryId}__/messages

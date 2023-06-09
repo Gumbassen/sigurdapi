@@ -224,8 +224,6 @@ export default function(router: Router)
             }
         }
 
-        log.info(JSON.stringify({ updateSet, locationsToAdd, locationsToRemove }, null, 2))
-
 
         const queries = []
         if(updateSet.length)
