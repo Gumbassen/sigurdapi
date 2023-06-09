@@ -23,6 +23,7 @@ import mapiterator from './utils/mapiterator'
 import database from './utils/database'
 import userpermissions from './utils/userpermissions'
 import nocache from 'nocache'
+import requestlog from './middlewares/requestlog'
 
 if(usingDotenvExample)
 {
@@ -52,11 +53,7 @@ app.set('etag', false)
 
 // Initialize middlewares
 app.use(express.json())
-app.use((req, res, next) =>
-{
-    log.http(`[${req.method}] ${req.url}\nBody: `, req.body)
-    next()
-})
+app.use(requestlog())
 app.use(database.middleware())
 app.use(authmw({
     insecureFilter: request =>
