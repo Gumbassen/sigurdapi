@@ -34,7 +34,7 @@ if(usingDotenvExample)
         + '#   Using ".env.example" as ".env" is missing!   #\n'
         + '#                                                #\n'
         + '##################################################\n'
-        + 'Please create a copy of ".env.example" and rename it to ".env"')
+        + 'Please create a copy of ".env.example" and rename it to ".env"\n')
 }
 
 
