@@ -172,7 +172,7 @@ interface WinstonLikeLogger
     fatal:   (...args: unknown[]) => (ILogObj & ILogObjMeta) | undefined
 }
 
-const exported: WinstonLikeLogger = {
+const log: WinstonLikeLogger = {
     /* eslint-disable brace-style */
     get silly()   { return logger.log.bind(logger, 0, 'SILLY') },
     get debug()   { return logger.log.bind(logger, 1, 'DEBUG') },
@@ -185,9 +185,9 @@ const exported: WinstonLikeLogger = {
     /* eslint-enable brace-style */
 }
 
-process.on('uncaughtException',  exception => exported.fatal('Uncaught exception:',  exception))
-process.on('unhandledRejection', rejection => exported.fatal('Unhandled rejection:', rejection))
+process.on('uncaughtException',  exception => log.fatal('Uncaught exception:',  exception))
+process.on('unhandledRejection', rejection => log.fatal('Unhandled rejection:', rejection))
 
-exported.info(`⚡ Running in "${process.env.NODE_ENV}" mode`)
+log.info(`⚡ Running in "${process.env.NODE_ENV}" mode`)
 
-export default exported
+export default log
