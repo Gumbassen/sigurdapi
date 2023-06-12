@@ -12,7 +12,7 @@
  - __[POST]__ /auth/authenticate
  - __[POST]__ /auth/refresh
 
-## Entry
+## Entry [__Finished__]
  - __[GET]__ /entries  
  Mangler "fulfillsTag" og "fulfillsRule".
  - __[POST]__ /entry
