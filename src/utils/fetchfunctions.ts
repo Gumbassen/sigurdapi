@@ -31,6 +31,63 @@ function collapseClauses(clauses: string[]): string
     return ` AND ${clauses.join(' AND ')}`
 }
 
+export async function fetchLocations(companyId: number): Promise<Map<number, ApiDataTypes.Objects.Location>>
+export async function fetchLocations(companyId: number, field: 'Id', values: number[]): Promise<Map<number, ApiDataTypes.Objects.Location>>
+export async function fetchLocations(companyId: number, field: 'Id' | 'None' = 'None', values?: number[]): Promise<Map<number, ApiDataTypes.Objects.Location>>
+{
+    if(field !== 'None' && typeof values === 'undefined')
+        throw new Error('Invalid parameters. "values" is required if "field" isnt "None"')
+
+    const clauses: string[] = []
+    switch(field)
+    {
+        case 'Id':
+            if(!Array.isArray(values))
+                throw new Error('values must be an array')
+
+            if(!values.length)
+                return new Map()
+
+            clauses.push(/*SQL*/`l.${field} IN (${escape(values)})`)
+            break
+
+        case 'None':
+            if(typeof values !== 'undefined')
+                throw new Error('values must be undefined')
+            break
+    }
+
+    const results = await sql`
+        SELECT
+            l.Id                     AS Id,
+            l.Name                   AS Name,
+            l.Description            AS Description,
+            GROUP_CONCAT(xll.UserId) AS LeaderIds
+        FROM
+            locations AS l
+        LEFT JOIN x_location_leaders AS xll ON
+            xll.LocationId = l.Id
+        WHERE
+            l.CompanyId = ${companyId}
+            ${unsafe(collapseClauses(clauses))}
+        GROUP BY
+            l.Id`
+
+    const locations = new Map<number, ApiDataTypes.Objects.Location>()
+    for(const row of results)
+    {
+        locations.set(row.Id, {
+            Id:          row.Id,
+            CompanyId:   companyId,
+            Name:        row.Name,
+            Description: row.Description ?? undefined,
+            LeaderIds:   csNumberRow(row.LeaderIds ?? ''),
+        })
+    }
+
+    return locations
+}
+
 export interface FetchTimeEntriesNumberOption {
     field: 'Id' | 'UserId' | 'TimeEntryTypeId' | 'GroupingId' | 'LocationId'
     value: number[]
@@ -41,11 +98,27 @@ export interface FetchTimeEntriesDateOption {
     value: Date | number
 }
 
-export type FetchTimeEntriesOption = FetchTimeEntriesNumberOption | FetchTimeEntriesDateOption
+export enum EFetchTimeEntriesDataListOptions {
+    'Location' = 'Location',
+    'Message'  = 'Message',
+}
 
-export async function fetchTimeEntries(companyId: number, options: FetchTimeEntriesOption[]): Promise<Map<number, ApiDataTypes.Objects.TimeEntry>>
+export interface FetchTimeEntriesDataListOption {
+    field: 'WithData',
+    value: EFetchTimeEntriesDataListOptions[],
+}
+
+export type FetchTimeEntriesOption = FetchTimeEntriesNumberOption | FetchTimeEntriesDateOption | FetchTimeEntriesDataListOption
+
+export async function fetchTimeEntries(companyId: number, options: FetchTimeEntriesOption[]): Promise<Map<number, ApiDataTypes.Objects.FetchedTimeEntry>>
 {
     const clauses: string[] = []
+
+    const dataListOptions: { [K in FetchTimeEntriesDataListOption['value'][number]]: boolean } = {
+        Location: false,
+        Message:  false,
+    }
+
     for(const option of options)
     {
         switch(option.field)
@@ -71,8 +144,13 @@ export async function fetchTimeEntries(companyId: number, options: FetchTimeEntr
                 else
                     clauses.push(/*SQL*/`te.End <= FROM_UNIXTIME(${escape(option.value)})`)
                 break
+
+            case 'WithData':
+                for(const value of option.value)
+                    dataListOptions[value] = true
         }
     }
+    
 
     const results = await sql`
         SELECT
@@ -88,17 +166,18 @@ export async function fetchTimeEntries(companyId: number, options: FetchTimeEntr
         FROM
             timeentries AS te
         LEFT JOIN timeentry_messages AS tem ON
-            tem.TimeEntryId = te.Id
+            tem.CompanyId = te.CompanyId
+            AND tem.TimeEntryId = te.Id
         WHERE
             te.CompanyId = ${companyId}
             ${unsafe(collapseClauses(clauses))}
         GROUP BY
             te.Id`
 
-    const entries = new Map<number, ApiDataTypes.Objects.TimeEntry>()
+    const entries: Record<number, Partial<ApiDataTypes.Objects.FetchedTimeEntry>> = {}
     for(const row of results)
     {
-        entries.set(row.Id, {
+        entries[row.Id] = {
             Id:              row.Id,
             CompanyId:       companyId,
             UserId:          row.UserId,
@@ -109,10 +188,82 @@ export async function fetchTimeEntries(companyId: number, options: FetchTimeEntr
             LocationId:      row.LocationId,
             TimeEntryTypeId: row.TimeEntryTypeId ?? undefined,
             MessageIds:      csNumberRow(row.MessageIds ?? ''),
-        })
+        }
     }
 
-    return entries
+    if(dataListOptions.Location)
+    {
+        const locations = await fetchLocations(companyId, 'Id', Object.values(entries).map(entry => entry.LocationId!))
+        for(const id in entries)
+        {
+            const location = locations.get(entries[id].LocationId!)
+            if(!location)
+                throw new Error(`Location was undefined LocationId=${entries[id].LocationId} EntryId=${id}`)
+
+            entries[id].WithLocation = true
+            entries[id].Location     = locations.get(entries[id].LocationId!)
+        }
+    }
+
+    if(dataListOptions.Message)
+    {
+        const messageIds: number[] = []
+        for(const entryId in entries)
+        {
+            entries[entryId].WithMessages = true
+            entries[entryId].Messages     = []
+
+            for(const messageId of entries[entryId].MessageIds!)
+            {
+                if(messageIds.includes(messageId))
+                    continue
+                
+                messageIds.push(messageId)
+            }
+        }
+
+        if(messageIds.length)
+        {
+            const results = await sql`
+                SELECT
+                    tem.Id                        AS Id,
+                    tem.UserId                    AS UserId,
+                    tem.TimeEntryId               AS TimeEntryId,
+                    UNIX_TIMESTAMP(tem.CreatedAt) AS CreatedAt,
+                    tem.Message                   AS Message,
+                    u.UserRoleId                  AS User_UserRoleId,
+                    u.FullName                    AS User_FullName,
+                    u.ProfileImage                AS User_ProfileImage
+                FROM
+                    timeentry_messages AS tem
+                LEFT JOIN users AS u ON
+                    u.CompanyId = tem.CompanyId
+                    AND u.Id = tem.UserId
+                WHERE
+                    tem.CompanyId = ${companyId}
+                    AND tem.Id IN (${messageIds})`
+
+            for(const message of results)
+            {
+                // TODO: Verify that all messages was indeed retrieved so that there isnt any message IDs without a corresponding message object
+                entries[message.TimeEntryId].Messages!.push({
+                    Id:          message.Id,
+                    CompanyId:   companyId,
+                    UserId:      message.UserId,
+                    TimeEntryId: message.TimeEntryId,
+                    CreatedAt:   message.CreatedAt,
+                    Message:     message.Message,
+                    User:        {
+                        UserRoleId:   message.User_UserRoleId,
+                        FullName:     message.User_FullName,
+                        ProfileImage: message.User_ProfileImage ?? undefined,
+                    },
+                })
+            }
+        }
+    }
+
+    return new Map(Object.entries(entries)) as unknown as Map<number, ApiDataTypes.Objects.FetchedTimeEntry>
 }
 
 export interface FetchUsersNumberOption {
@@ -465,63 +616,6 @@ export async function fetchUserRolePermissions(companyId: number, field: 'UserId
     }
 
     return perms
-}
-
-export async function fetchLocations(companyId: number): Promise<Map<number, ApiDataTypes.Objects.Location>>
-export async function fetchLocations(companyId: number, field: 'Id', values: number[]): Promise<Map<number, ApiDataTypes.Objects.Location>>
-export async function fetchLocations(companyId: number, field: 'Id' | 'None' = 'None', values?: number[]): Promise<Map<number, ApiDataTypes.Objects.Location>>
-{
-    if(field !== 'None' && typeof values === 'undefined')
-        throw new Error('Invalid parameters. "values" is required if "field" isnt "None"')
-
-    const clauses: string[] = []
-    switch(field)
-    {
-        case 'Id':
-            if(!Array.isArray(values))
-                throw new Error('values must be an array')
-
-            if(!values.length)
-                return new Map()
-
-            clauses.push(/*SQL*/`l.${field} IN (${escape(values)})`)
-            break
-
-        case 'None':
-            if(typeof values !== 'undefined')
-                throw new Error('values must be undefined')
-            break
-    }
-
-    const results = await sql`
-        SELECT
-            l.Id                     AS Id,
-            l.Name                   AS Name,
-            l.Description            AS Description,
-            GROUP_CONCAT(xll.UserId) AS LeaderIds
-        FROM
-            locations AS l
-        LEFT JOIN x_location_leaders AS xll ON
-            xll.LocationId = l.Id
-        WHERE
-            l.CompanyId = ${companyId}
-            ${unsafe(collapseClauses(clauses))}
-        GROUP BY
-            l.Id`
-
-    const locations = new Map<number, ApiDataTypes.Objects.Location>()
-    for(const row of results)
-    {
-        locations.set(row.Id, {
-            Id:          row.Id,
-            CompanyId:   companyId,
-            Name:        row.Name,
-            Description: row.Description ?? undefined,
-            LeaderIds:   csNumberRow(row.LeaderIds ?? ''),
-        })
-    }
-
-    return locations
 }
 
 export async function fetchCompany(companyId: number): Promise<ApiDataTypes.Objects.Company>

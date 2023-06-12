@@ -1,8 +1,14 @@
 import { Router, Request, Response } from 'express'
 import log from './../../utils/logger'
 import { error } from '../../utils/common'
-import { FetchTimeEntriesDateOption, FetchTimeEntriesNumberOption, FetchTimeEntriesOption, fetchTimeEntries } from '../../utils/fetchfunctions'
-import { digitStringRx, pipeDelimitedNumbersRx } from '../../utils/regexes'
+import { digitStringRx, pipeDelimitedAlphanumRx, pipeDelimitedNumbersRx } from '../../utils/regexes'
+import {
+    EFetchTimeEntriesDataListOptions,
+    FetchTimeEntriesDateOption,
+    FetchTimeEntriesNumberOption,
+    FetchTimeEntriesOption,
+    fetchTimeEntries
+} from '../../utils/fetchfunctions'
 
 export default function(router: Router)
 {
@@ -12,7 +18,7 @@ export default function(router: Router)
         const companyId = token.getPayloadField('cid')
         const query     = req.query
 
-        const queryClauses: FetchTimeEntriesOption[] = []
+        const fetchClauses: FetchTimeEntriesOption[] = []
 
         const numberOptions: { [_: string]: FetchTimeEntriesNumberOption['field'] } = {
             location: 'LocationId',
@@ -29,7 +35,7 @@ export default function(router: Router)
             const values = query[param]
 
             if(typeof values !== 'string' || !pipeDelimitedNumbersRx.test(values))
-                return error(res, 400, `Param "${param}" should be a pipe-delimited string`)
+                return error(res, 400, `Param "${param}" should be a pipe-delimited digit-string`)
 
             const ids: number[] = []
             for(const value of values.split('|'))
@@ -48,7 +54,7 @@ export default function(router: Router)
             if(!ids.length)
                 return error(res, 400, `Param "${param}" must be omitted or contain at least one entry`)
 
-            queryClauses.push({ field: numberOptions[param], value: ids })
+            fetchClauses.push({ field: numberOptions[param], value: ids })
         }
 
         const dateOptions: { [_: string]: FetchTimeEntriesDateOption['field'] } = {
@@ -71,8 +77,35 @@ export default function(router: Router)
             if(Number.isNaN(parsed) || parsed < 0)
                 return error(res, 400, `Param "${param}" is invalid`)
 
-            queryClauses.push({ field: dateOptions[param], value: parsed })
+            fetchClauses.push({ field: dateOptions[param], value: parsed })
         }
+
+        if('withdata' in query)
+        {
+            if(typeof query.withdata !== 'string' || !pipeDelimitedAlphanumRx.test(query.withdata))
+                return error(res, 400, 'Param "withdata" should be a pipe-delimited alphanumeric string')
+
+            const values = query.withdata.toLowerCase().split('|')
+            
+            const options: EFetchTimeEntriesDataListOptions[] = []
+            for(const option in EFetchTimeEntriesDataListOptions)
+            {
+                const i = values.indexOf(option.toLowerCase())
+                if(i === -1) continue
+
+                options.push(EFetchTimeEntriesDataListOptions[option as keyof typeof EFetchTimeEntriesDataListOptions])
+                values.splice(i, 1)
+            }
+
+            if(values.length)
+                return error(res, 400, `Param "withdata" entries "${values.join('", "')}" is invalid.`)
+
+            if(!options.length)
+                return error(res, 400, 'Param "withdata" must be omitted or contain at least one entry')
+            
+            fetchClauses.push({ field: 'WithData', value: options })
+        }
+
 
         const tagIds = []
         if('fulfillsTag' in query)
@@ -114,8 +147,8 @@ export default function(router: Router)
                 return error(res, 400, 'Param "fulfillsRule" must be omitted or contain one or more entries')
         }
 
-        if(!queryClauses.length)
-            return error(res, 400, 'At least one parameter must be given')
+        if(!fetchClauses.length)
+            return error(res, 400, 'At least one constraint type parameter must be given')
 
         // FIXME: ADD SUPPORT FOR "fulfillsTag" AND "fulfillsRule"
         if(tagIds.length)
@@ -130,6 +163,6 @@ export default function(router: Router)
             return error(res, 500, 'Param "fulfillsRule" is not implemented')
         }
 
-        res.send(Array.from((await fetchTimeEntries(companyId, queryClauses)).values()))
+        res.send(Array.from((await fetchTimeEntries(companyId, fetchClauses)).values()))
     })
 }

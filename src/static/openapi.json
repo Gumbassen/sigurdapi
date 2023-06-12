@@ -857,6 +857,19 @@
               }
             },
             "style": "pipeDelimited"
+          },
+          {
+            "name": "withdata",
+            "in": "query",
+            "description": "Extend the returned objects with extra data. Options:\n * location - Return the full location object on each entry.\n * message  - Return the full message object on each entry (also contains the users full name and role ID).\n",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "style": "pipeDelimited"
           }
         ],
         "responses": {

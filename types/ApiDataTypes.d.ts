@@ -10,7 +10,7 @@ declare namespace ApiDataTypes {
         interface TimeEntry {
             Id:               number
             CompanyId:        number
-            UserId:           number
+            UserId?:          number
             Start:            number
             End:              number
             Duration:         number
@@ -120,6 +120,28 @@ declare namespace ApiDataTypes {
         interface FullUserRole extends UserRole {
             Permissions: UserRolePermission[]
         }
+
+        interface FetchedTimeEntryMessage extends TimeEntryMessage {
+            User: Partial<User> & {
+                UserRoleId:           number
+                FullName:             string
+                ProfileImage?:        number
+            }
+        }
+
+        type FetchedTimeEntry = TimeEntry & ({
+            WithLocation: true
+            Location:     Location
+        } | {
+            WithLocation: false
+            Location:     undefined
+        }) & ({
+            WithMessages: true
+            Messages:     FetchedTimeEntryMessage[]
+        } | {
+            WithMessages: false
+            Messages:     undefined
+        })
     }
 
     declare namespace Responses {
