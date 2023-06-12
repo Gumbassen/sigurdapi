@@ -106,7 +106,7 @@ export async function fetchTimeEntries(companyId: number, options: FetchTimeEntr
             End:             row.End,
             Duration:        row.Duration,
             GroupingId:      row.GroupingId ?? undefined,
-            LocationId:      row.locationId,
+            LocationId:      row.LocationId,
             TimeEntryTypeId: row.TimeEntryTypeId ?? undefined,
             MessageIds:      csNumberRow(row.MessageIds ?? ''),
         })
