@@ -55,6 +55,7 @@
 ## Location
  - __[GET]__ /location
  - __[GET]__ /location/__{locationId}__
+ - __[DELETE]__ /location/__{locationId}__
  - __[GET]__ /location/__{locationId}__/users
  - __[GET]__ /location/__{locationId}__/leaders
 
