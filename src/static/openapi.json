@@ -880,7 +880,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/TimeEntry"
+                    "$ref": "#/components/schemas/FetchedTimeEntry"
                   }
                 }
               }
@@ -2775,6 +2775,64 @@
               },
               "TimeEntry": {
                 "$ref": "#/components/schemas/TimeEntry"
+              }
+            }
+          }
+        ]
+      },
+      "FetchedTimeEntryMessage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TimeEntryMessage"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "User": {
+                "type": "object",
+                "properties": {
+                  "UserRoleId": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "FullName": {
+                    "type": "string"
+                  },
+                  "ProfileImage": {
+                    "type": "integer",
+                    "format": "int32",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "FetchedTimeEntry": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TimeEntry"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "WithMessages": {
+                "type": "boolean",
+                "description": "Determines whether \"Messages\" is included."
+              },
+              "Messages": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FetchedTimeEntryMessage"
+                }
+              },
+              "WithLocation": {
+                "type": "boolean",
+                "description": "Determines whether \"Location\" is included."
+              },
+              "Location": {
+                "$ref": "#/components/schemas/Location"
               }
             }
           }
