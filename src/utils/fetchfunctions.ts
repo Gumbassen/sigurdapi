@@ -89,13 +89,15 @@ export async function fetchLocations(companyId: number, field: 'Id' | 'None' = '
 }
 
 export async function fetchLocation(companyId: number, locationId: number): Promise<ApiDataTypes.Objects.Location>
+export async function fetchLocation(companyId: number, locationId: number, throwOnNoResult: false): Promise<ApiDataTypes.Objects.Location | undefined>
+export async function fetchLocation(companyId: number, locationId: number, throwOnNoResult = true): Promise<ApiDataTypes.Objects.Location | undefined>
 {
     const location = await fetchLocations(companyId, 'Id', [locationId])
 
-    if(!location.has(locationId))
+    if(!location.has(locationId) && throwOnNoResult)
         throw new SQLNoResultError(`[CID=${companyId}] Location ID="${locationId}" not found`)
 
-    return location.get(locationId)!
+    return location.get(locationId)
 }
 
 export interface FetchTimeEntriesNumberOption {
@@ -401,6 +403,8 @@ export async function fetchUsers(companyId: number, options?: FetchUsersOption[]
 }
 
 export async function fetchUser(companyId: number, field: 'Id', value: number): Promise<ApiDataTypes.Objects.User>
+export async function fetchUser(companyId: number, field: 'Id', value: number, throwOnNoResult: false): Promise<ApiDataTypes.Objects.User | undefined>
+export async function fetchUser(companyId: number, field: 'Id', value: number, throwOnNoResult = true): Promise<ApiDataTypes.Objects.User | undefined>
 {
     const result = await sql`
         SELECT
@@ -430,7 +434,11 @@ export async function fetchUser(companyId: number, field: 'Id', value: number): 
         LIMIT 1`
 
     if(!result.length)
-        throw new SQLNoResultError(`[CID=${companyId}] User "${field}"="${value}" not found`)
+    {
+        if(throwOnNoResult)
+            throw new SQLNoResultError(`[CID=${companyId}] User "${field}"="${value}" not found`)
+        return undefined
+    }
 
     return {
         Id:                   result[0].Id,

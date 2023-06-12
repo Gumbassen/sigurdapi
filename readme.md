@@ -58,6 +58,7 @@
  - __[DELETE]__ /location/__{locationId}__
  - __[GET]__ /location/__{locationId}__/users
  - __[GET]__ /location/__{locationId}__/leaders
+ - __[POST]__ /location/__{locationId}__/leaders/__{leaderId}__
 
 ## Role [_Finished_]
  - __[GET]__ /role
