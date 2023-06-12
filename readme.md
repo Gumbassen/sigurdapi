@@ -1,4 +1,16 @@
 
+# Hvor er ting når jeg kører backenden?
+
+Du kan altid se swagger på:
+ - [127.0.0.1:6969/swagger](http://127.0.0.1:6969/swagger)
+
+Selve API'en er tilgængelig på samme host ([127.0.0.1:6969](http://127.0.0.1:6969)).
+
+WebSocket serveren er på [127.0.0.1:7070](ws://127.0.0.1:7070).  
+Husk at websockets kører på deres egen protokol, så der skal stå "ws://" foran, ikke "http://".
+
+---
+
 ## OBS!
 > Mange POST-requests er ikke beskrevet ordenligt i swagger.  
 > F.eks. giver det ikke mening at man skal angive et ID når man opretter en Location.  
