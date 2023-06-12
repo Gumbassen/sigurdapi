@@ -88,6 +88,16 @@ export async function fetchLocations(companyId: number, field: 'Id' | 'None' = '
     return locations
 }
 
+export async function fetchLocation(companyId: number, locationId: number): Promise<ApiDataTypes.Objects.Location>
+{
+    const location = await fetchLocations(companyId, 'Id', [locationId])
+
+    if(!location.has(locationId))
+        throw new SQLNoResultError(`[CID=${companyId}] Location ID="${locationId}" not found`)
+
+    return location.get(locationId)!
+}
+
 export interface FetchTimeEntriesNumberOption {
     field: 'Id' | 'UserId' | 'TimeEntryTypeId' | 'GroupingId' | 'LocationId'
     value: number[]
