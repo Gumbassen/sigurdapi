@@ -11,10 +11,10 @@ WebSocket serveren er på [ws://127.0.0.1:6969/ws](ws://127.0.0.1:6969/ws)
 
 Det skal lige siges at, hvis din klient _kan_ bruge headere i din connection request, så brug authorization-headeren til at give din token.  
 Ellers skal du sende en besked når forbindelsen er åbnet med dette indhold:
-```json
+```JSON
 {
-  type:  'action',
-  token: '[[DIN TOKEN]]',
+  "type":  "action",
+  "token": "[[DIN TOKEN]]",
 }
 ```
 
@@ -87,7 +87,9 @@ Endpoints med _WS_ bliver også broadcasted til WebSocket serveren.
 | WS | Method     | URL                                               | Comments |
 |----|------------|---------------------------------------------------|----------|
 |    | __GET__    | /location                                         |          |
+|    | __POST__   | /location                                         |          |
 |    | __GET__    | /location/__{locationId}__                        |          |
+| X  | __PUT__    | /location/__{locationId}__                        |          |
 |    | __DELETE__ | /location/__{locationId}__                        |          |
 |    | __GET__    | /location/__{locationId}__/users                  |          |
 |    | __GET__    | /location/__{locationId}__/leaders                |          |
