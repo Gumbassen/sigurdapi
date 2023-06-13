@@ -106,6 +106,11 @@ declare type TAccess              = Token<AccessToken>
 declare type AuthorizedWSClient   = WSClient<TAccess>
 declare type UnauthorizedWSClient = WSClient<undefined>
 
+
+type WSClientSocketErrorHandlerFunc   = (error: Error) => void
+type WSClientSocketMessageHandlerFunc = (data: RawData, isBinary: boolean) => void
+type WSClientSocketCloseHandlerFunc   = (code: number, reason: Buffer) => void
+
 function randomHexString(length: number): string
 {
     const challenge = new Uint8Array(Math.ceil(length / 2))
@@ -224,32 +229,6 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
         this.token    = token
 
         this.initialize()
-
-        this.authorizationTimeout = setTimeout(() =>
-        {
-            this.authorizationTimeout = undefined
-            if(this.token) return
-
-            log.silly(`Client#${this.uid} authorization timeout`)
-            this.destroy()
-        }, WSCLIENT_AUTHORIZATION_TIMEOUT)
-
-        this.challengeInterval = setInterval(() =>
-        {
-            if(this.challengeNonce !== undefined)
-            {
-                log.silly(`Client#${this.uid} ping timeout`)
-                this.destroy()
-                return
-            }
-
-            this.challengeNonce = randomHexString(10)
-            this.send({
-                type:      WSClientMessageTypes.ping,
-                challenge: this.challengeNonce,
-            })
-            log.silly(`Client#${this.uid} new challenge: ${this.challengeNonce}`)
-        }, WSCLIENT_PING_INTERVAL)
     }
 
     public send(data: WSClientMessage): void
@@ -283,7 +262,7 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
         return this.uid
     }
 
-    public destroy(): void
+    public destroy(reason?: string): void
     {
         if(this.isDestroyed)
             return
@@ -297,7 +276,7 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
         }
 
         if(this.socket.readyState === WebSocket.OPEN)
-            this.socket.close()
+            this.socket.close(undefined, reason)
 
         clearTimeout(this.authorizationTimeout)
         clearInterval(this.challengeInterval)
@@ -311,14 +290,49 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
             throw new Error('WSClient can only be initialized once')
         this.isInitialized = true
 
-        this.socket.on('error', this.socketErrorHandler = (error: Error) =>
+        this.socket.on('error',   this.createSocketErrorHandler())
+        this.socket.on('message', this.createSocketMessageHandler())
+        this.socket.on('close',   this.createSocketCloseHandler())
+
+        this.createAuthorizationTimeout()
+        this.createChallengeInterval()
+    }
+
+    private parseIncoming<M extends WSClientMessage = WSClientMessage>(data: string | RawData): M | undefined
+    {
+        let parsed
+        try
+        {
+            parsed = JSON.parse(String(data))
+        }
+        catch(error)
+        {
+            this.emit('error', new WSClientError(this, {
+                type: 'JSON_PARSE_ERROR',
+            }, error, 'Messages must be valid JSON'))
+        }
+        if(!(parsed.type in WSClientMessageTypes))
+        {
+            this.emit('error', new WSClientError(this, {
+                type: 'MESSAGE_TYPE_INVALID',
+            }, undefined, 'Message type is missing or invalid.'))
+        }
+        return parsed as M
+    }
+
+    private createSocketErrorHandler(): WSClientSocketErrorHandlerFunc
+    {
+        return this.socketErrorHandler = (error: Error) =>
         {
             this.emit('error', new WSClientError(this, {
                 type: 'WEBSOCKET_ERROR',
             }, error, `${error.name} ${error.message}`))
-        })
+        }
+    }
 
-        this.socket.on('message', this.socketMessageHandler = (data: RawData, isBinary: boolean) =>
+    private createSocketMessageHandler(): WSClientSocketMessageHandlerFunc
+    {
+        return this.socketMessageHandler = (data: RawData, isBinary: boolean) =>
         {
             if(isBinary)
             {
@@ -363,7 +377,7 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
                             if(parsed.answer !== this.challengeNonce)
                             {
                                 log.silly(`Client#${this.uid} answered with the wrong challenge answer.`)
-                                this.destroy()
+                                this.destroy('Heartbeat timeout')
                                 return
                             }
                             this.challengeNonce = undefined
@@ -387,40 +401,53 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
                     type: 'UNKNOWN',
                 }, error, 'OnMessage error'))
             }
-        })
+        }
+    }
 
-        this.socket.on('close', this.socketCloseHandler = (code: number, reason: Buffer) =>
+    private createSocketCloseHandler(): WSClientSocketCloseHandlerFunc
+    {
+        return this.socketCloseHandler = (code: number, reason: Buffer) =>
         {
             log.info(`Client closed. Reason(${code}): ${reason}`)
             this.emit('close')
             this.destroy()
-        })
+        }
     }
 
-    private parseIncoming<M extends WSClientMessage = WSClientMessage>(data: string | RawData): M | undefined
+    private createAuthorizationTimeout(): void
     {
-        let parsed
-        try
+        this.authorizationTimeout = setTimeout(() =>
         {
-            parsed = JSON.parse(String(data))
-        }
-        catch(error)
+            this.authorizationTimeout = undefined
+            if(this.token) return
+
+            log.silly(`Client#${this.uid} authorization timeout`)
+            this.destroy('Authorization timeout')
+        }, WSCLIENT_AUTHORIZATION_TIMEOUT)
+    }
+
+    private createChallengeInterval(): void
+    {
+        this.challengeInterval = setInterval(() =>
         {
-            this.emit('error', new WSClientError(this, {
-                type: 'JSON_PARSE_ERROR',
-            }, error, 'Messages must be valid JSON'))
-        }
-        if(!(parsed.type in WSClientMessageTypes))
-        {
-            this.emit('error', new WSClientError(this, {
-                type: 'MESSAGE_TYPE_INVALID',
-            }, undefined, 'Message type is missing or invalid.'))
-        }
-        return parsed as M
+            if(this.challengeNonce !== undefined)
+            {
+                log.silly(`Client#${this.uid} ping timeout`)
+                this.destroy()
+                return
+            }
+
+            this.challengeNonce = randomHexString(10)
+            this.send({
+                type:      WSClientMessageTypes.ping,
+                challenge: this.challengeNonce,
+            })
+            log.silly(`Client#${this.uid} new challenge: ${this.challengeNonce}`)
+        }, WSCLIENT_PING_INTERVAL)
     }
 }
 
-process.on('beforeExit', () =>
+process.on('beforeExit', () => // TODO: Does this even work??
 {
     log.silly('Destroying active clients...')
     for(const client of WSClient.getAllClients())
