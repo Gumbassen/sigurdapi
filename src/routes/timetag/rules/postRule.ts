@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express'
-import { error } from '../../../utils/common'
+import { error, wsbroadcast } from '../../../utils/common'
 import { ONE_DAY_SECONDS } from '../../../utils/timedefinitions'
 import { ETimetagWeekday } from '../../../utils/timetagweekdays'
 import { escape, sql, unsafe } from '../../../utils/database'
@@ -155,6 +155,7 @@ export default function(router: Router)
             VALUES
                 ${unsafe(insertWeekdays.join(','))}`
 
+        wsbroadcast(res, companyId, 'created', 'TimeTagRule', rule)
         res.status(201).send(rule)
     })
 }

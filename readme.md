@@ -33,67 +33,77 @@ Husk at websockets kører på deres egen protokol, så der skal stå "ws://" for
 
 # Funktionelle endpoints
 
+Endpoints med _WS_ bliver også broadcasted til WebSocket serveren.
+
 ## Auth [_Finished_]
- - __[POST]__ /auth/authenticate
- - __[POST]__ /auth/refresh
+| WS | Method   | URL                | Comments |
+|----|----------|--------------------|----------|
+|    | __POST__ | /auth/authenticate |          |
+|    | __POST__ | /auth/refresh      |          |
 
 ## Entry [__Finished__]
- - __[GET]__ /entries  
- Mangler "fulfillsTag" og "fulfillsRule".
- - __[POST]__ /entry
- - __[GET]__ /entry/__{entryId}__
- - __[PUT]__ /entry/__{entryId}__
- - __[DELETE]__ /entry/__{entryId}__
- - __[GET]__ /entry/__{entryId}__/messages  
-   Sender tomt array selvom der ikke findes en User med det givne ID.
- - __[POST]__ /entry/__{entryId}__/messages __[WS!]__
+| WS | Method     | URL                           | Comments                                                           |
+|----|------------|-------------------------------|--------------------------------------------------------------------|
+|    | __GET__    | /entries                      | Mangler "fulfillsTag" og "fulfillsRule".                           |
+| X  | __POST__   | /entry                        |                                                                    |
+|    | __GET__    | /entry/__{entryId}__          |                                                                    |
+| X  | __PUT__    | /entry/__{entryId}__          |                                                                    |
+| X  | __DELETE__ | /entry/__{entryId}__          |                                                                    |
+|    | __GET__    | /entry/__{entryId}__/messages | Sender tomt array selvom der ikke findes en User med det givne ID. |
+| X  | __POST__   | /entry/__{entryId}__/messages |                                                                    |
 
 ## User [_Finished_]
- - __[GET]__ /users
- - __[GET]__ /user/current
- - __[GET]__ /user
- - __[POST]__ /user
- - __[GET]__ /user/__{userId}__
- - __[PUT]__ /user/__{userId}__
- - __[DELETE]__ /user/__{userId}__
- - __[GET]__ /user/__{userId}__/locations
- - __[GET]__ /user/__{userId}__/roles
- - __[GET]__ /user/__{userId}__/permissions
- - __[GET]__ /user/__{userId}__/tagcollections  
- Sender tomt array selvom der ikke findes en User med det givne ID.
- - __[POST]__ /user/__{userId}__/tagcollections
- - __[GET]__ /user/__{userId}__/tagcollections/__{collectionId}__
- - __[DELETE]__ /user/__{userId}__/tagcollections/__{collectionId}__
+| WS | Method     | URL                                                  | Comments                                                           |
+|----|------------|------------------------------------------------------|--------------------------------------------------------------------|
+|    | __GET__    | /users                                               |                                                                    |
+|    | __GET__    | /user/current                                        |                                                                    |
+|    | __GET__    | /user                                                |                                                                    |
+| X  | __POST__   | /user                                                |                                                                    |
+|    | __GET__    | /user/__{userId}__                                   |                                                                    |
+| X  | __PUT__    | /user/__{userId}__                                   |                                                                    |
+| X  | __DELETE__ | /user/__{userId}__                                   |                                                                    |
+|    | __GET__    | /user/__{userId}__/locations                         |                                                                    |
+|    | __GET__    | /user/__{userId}__/roles                             |                                                                    |
+|    | __GET__    | /user/__{userId}__/permissions                       |                                                                    |
+|    | __GET__    | /user/__{userId}__/tagcollections                    | Sender tomt array selvom der ikke findes en User med det givne ID. |
+| X  | __POST__   | /user/__{userId}__/tagcollections                    |                                                                    |
+|    | __GET__    | /user/__{userId}__/tagcollections/__{collectionId}__ |                                                                    |
+| X  | __DELETE__ | /user/__{userId}__/tagcollections/__{collectionId}__ |                                                                    |
 
 ## Timetag [_Finished_]
- - __[GET]__ /timetag
- - __[POST]__ /timetag
- - __[GET]__ /timetag/__{timeTagId}__
- - __[PUT]__ /timetag/__{timeTagId}__
- - __[DELETE]__ /timetag/__{timeTagId}__
- - __[GET]__ /timetag/__{timeTagId}__/rules  
- Sender tomt array selvom der ikke findes et TimeTag med det givne ID.
- - __[POST]__ /timetag/__{timeTagId}__/rules  
- - __[GET]__ /timetag/__{timeTagId}__/rules/__{ruleId}__
- - __[DELETE]__ /timetag/__{timeTagId}__/rules/__{ruleId}__
+| WS | Method     | URL                                         | Comments                                                              |
+|----|------------|---------------------------------------------|-----------------------------------------------------------------------|
+|    | __GET__    | /timetag                                    |                                                                       |
+| X  | __POST__   | /timetag                                    |                                                                       |
+|    | __GET__    | /timetag/__{timeTagId}__                    |                                                                       |
+| X  | __PUT__    | /timetag/__{timeTagId}__                    |                                                                       |
+| X  | __DELETE__ | /timetag/__{timeTagId}__                    |                                                                       |
+|    | __GET__    | /timetag/__{timeTagId}__/rules              | Sender tomt array selvom der ikke findes et TimeTag med det givne ID. |
+| X  | __POST__   | /timetag/__{timeTagId}__/rules              |                                                                       |
+|    | __GET__    | /timetag/__{timeTagId}__/rules/__{ruleId}__ |                                                                       |
+| X  | __DELETE__ | /timetag/__{timeTagId}__/rules/__{ruleId}__ |                                                                       |
 
 ## Location
- - __[GET]__ /location
- - __[GET]__ /location/__{locationId}__
- - __[DELETE]__ /location/__{locationId}__
- - __[GET]__ /location/__{locationId}__/users
- - __[GET]__ /location/__{locationId}__/leaders
- - __[POST]__ /location/__{locationId}__/leaders/__{leaderId}__
- - __[DELETE]__ /location/__{locationId}__/leaders/__{leaderId}__
+| WS | Method     | URL                                               | Comments |
+|----|------------|---------------------------------------------------|----------|
+|    | __GET__    | /location                                         |          |
+|    | __GET__    | /location/__{locationId}__                        |          |
+|    | __DELETE__ | /location/__{locationId}__                        |          |
+|    | __GET__    | /location/__{locationId}__/users                  |          |
+|    | __GET__    | /location/__{locationId}__/leaders                |          |
+|    | __POST__   | /location/__{locationId}__/leaders/__{leaderId}__ |          |
+|    | __DELETE__ | /location/__{locationId}__/leaders/__{leaderId}__ |          |
 
 ## Role [_Finished_]
- - __[GET]__ /role
- - __[POST]__ /role
- - __[GET]__ /role/__{roleId}__
- - __[PUT]__ /role/__{roleId}__
- - __[DELETE]__ /role/__{roleId}__
- - __[GET]__ /role/__{roleId}__/permission
- - __[POST]__ /role/__{roleId}__/permission/__{permissionId}__
- - __[DELETE]__ /role/__{roleId}__/permission/__{permissionId}__
- - __[GET]__ /roles/permission
- - __[GET]__ /roles/permission/__{permissionId}__
+| WS | Method     | URL                                              | Comments |
+|----|------------|--------------------------------------------------|----------|
+|    | __GET__    | /role                                            |          |
+| X  | __POST__   | /role                                            |          |
+|    | __GET__    | /role/__{roleId}__                               |          |
+| X  | __PUT__    | /role/__{roleId}__                               |          |
+| X  | __DELETE__ | /role/__{roleId}__                               |          |
+|    | __GET__    | /role/__{roleId}__/permission                    |          |
+|    | __POST__   | /role/__{roleId}__/permission/__{permissionId}__ |          |
+|    | __DELETE__ | /role/__{roleId}__/permission/__{permissionId}__ |          |
+|    | __GET__    | /roles/permission                                |          |
+|    | __GET__    | /roles/permission/__{permissionId}__             |          |

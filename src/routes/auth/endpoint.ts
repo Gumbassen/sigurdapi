@@ -50,6 +50,7 @@ export default function(router: Router)
                         hdt: user.HiredDate ?? null,
                         fdt: user.FiredDate ?? null,
                         prm: user.UserRole.PermissionIds,
+                        loc: user.LocationIds,
                     }, ttlAccess).toTokenObject(),
                     refreshToken: Token.fromPayload<RefreshToken>({
                         typ: 'refresh',
@@ -108,6 +109,7 @@ export default function(router: Router)
                     hdt: user.HiredDate ?? null,
                     fdt: user.FiredDate ?? null,
                     prm: user.UserRole.PermissionIds,
+                    loc: user.LocationIds,
                 }).toTokenObject(),
                 refreshToken: token.toTokenObject(),
             }

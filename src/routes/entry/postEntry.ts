@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express'
-import { error } from '../../utils/common'
+import { error, wsbroadcast } from '../../utils/common'
 import { escape, sql, unsafe } from '../../utils/database'
 import log from '../../utils/logger'
 
@@ -144,6 +144,7 @@ export default function(router: Router)
             delete entry.StartDate
             delete entry.EndDate
 
+            wsbroadcast(res, entry.CompanyId, 'created', 'TimeEntry', entry)
             res.status(201).send(entry)
         }
         catch(_error)

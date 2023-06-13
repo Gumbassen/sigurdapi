@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express'
-import { error } from '../../../utils/common'
+import { error, wsbroadcast } from '../../../utils/common'
 import { fetchTimeEntryTypeCollections } from '../../../utils/fetchfunctions'
 import { sql } from '../../../utils/database'
 import log from '../../../utils/logger'
@@ -46,6 +46,7 @@ export default function(router: Router)
 
             log.silly(`Deleted TimeEntryTypeCollection: Id=${collectionId}, UserId=${userId}, CompanyId=${companyId}`)
 
+            wsbroadcast(res, companyId, 'deleted', 'TimeEntryTypeCollection', { Id: collectionId })
             res.sendStatus(204)
         }
         catch(_error)

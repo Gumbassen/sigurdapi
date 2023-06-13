@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express'
-import { error } from '../../../utils/common'
+import { error, wsbroadcast } from '../../../utils/common'
 import { escape, sql, unsafe } from '../../../utils/database'
 import log from '../../../utils/logger'
 
@@ -157,6 +157,7 @@ export default function(router: Router)
                         ${unsafe(collection.TimeTagIds.map(id => `(${escape(collection.Id)}, ${escape(id)})`).join(','))}`
             }
 
+            wsbroadcast(res, companyId, 'created', 'TimeEntryTypeCollection', collection)
             res.status(201).send(collection)
         }
         catch(_error)

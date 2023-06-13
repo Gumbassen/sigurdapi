@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express'
-import { error } from '../../utils/common'
+import { error, wsbroadcast } from '../../utils/common'
 import { SQLNoResultError, fetchUserRole } from '../../utils/fetchfunctions'
 import log from '../../utils/logger'
 import isValidKeyOf from '../../utils/isvalidkeyof'
@@ -216,6 +216,8 @@ export default function(router: Router)
             return Promise.reject(_error)
         })
 
-        res.send(await fetchUserRole(companyId, roleId))
+        const fetched = await fetchUserRole(companyId, roleId)
+        wsbroadcast(res, companyId, 'updated', 'UserRole', fetched)
+        res.send(fetched)
     })
 }

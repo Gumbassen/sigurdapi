@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express'
-import { error } from '../../utils/common'
+import { error, wsbroadcast } from '../../utils/common'
 import { SQLNoResultError, fetchFullTimetag } from '../../utils/fetchfunctions'
 import { sql } from '../../utils/database'
 import log from '../../utils/logger'
@@ -32,6 +32,7 @@ export default function(router: Router)
 
             log.silly(`Timetag was deleted:\n${JSON.stringify(timetag, null, 2)}`)
 
+            wsbroadcast(res, companyId, 'deleted', 'TimeTag', { Id: timetagId })
             res.sendStatus(204)
         }
         catch(_error)

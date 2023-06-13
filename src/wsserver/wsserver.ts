@@ -20,7 +20,7 @@ export function initialize(options?: ServerOptions): Promise<WebSocketServer>
                 log.verbose(`New connection! ${request.socket.remoteAddress}`)
                 try
                 {
-                    WSClient.CreateClient(socket, request)
+                    WSClient.createClient(socket, request)
                 }
                 catch(error)
                 {
@@ -46,7 +46,7 @@ function wsbroadcast(message: WSClientActionMessage): void
 
     log.verbose('[WEBSOCKET] Broadcast', message)
 
-    for(const client of WSClient.GetClientsForCompanyId(message.companyId))
+    for(const client of WSClient.getClientsForCompanyId(message.companyId))
         client.send(message)
 }
 

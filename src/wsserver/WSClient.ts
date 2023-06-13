@@ -2,7 +2,7 @@
 
 import { WebSocket, RawData } from 'ws'
 import EventEmitter from 'events'
-import Token, { TokenInvalidError } from '../utils/token'
+import Token, { AccessToken, TokenInvalidError } from '../utils/token'
 import { IncomingMessage } from 'http'
 import { getNamedLogger } from '../utils/logger'
 import { WSClientError } from './WSClientError'
@@ -27,6 +27,18 @@ export interface WSClientPingMessage extends WSClientBaseMessage {
     type: WSClientMessageTypes.ping
 }
 
+export enum WSClientActionModelNames {
+    TimeEntry               = 'TimeEntry',
+    TimeEntryTypeCollection = 'TimeEntryTypeCollection',
+    TimeEntryType           = 'TimeEntryType',
+    User                    = 'User',
+    TimeTag                 = 'TimeTag',
+    UserRole                = 'UserRole',
+    Location                = 'Location',
+    TimeTagRule             = 'TimeTagRule',
+    TimeEntryMessage        = 'TimeEntryMessage',
+}
+
 export interface WSClientActionMessage extends WSClientBaseMessage {
     /**
      * The message type.
@@ -46,7 +58,7 @@ export interface WSClientActionMessage extends WSClientBaseMessage {
     /**
      * Name of the "model" that is changed.
      */
-    name: string
+    name: WSClientActionModelNames | keyof typeof WSClientActionModelNames
 
     /**
      * The URL that triggered this broadcast.
@@ -77,39 +89,43 @@ export type WSClientMessage = WSClientPingMessage
     | WSClientActionMessage
     | WSClientAuthorizeMessage
 
-export class WSClient<T extends Token | undefined = Token | undefined> extends EventEmitter
+declare type TAccess              = Token<AccessToken>
+declare type AuthorizedWSClient   = WSClient<TAccess>
+declare type UnauthorizedWSClient = WSClient<undefined>
+
+export class WSClient<T extends TAccess | undefined = TAccess | undefined> extends EventEmitter
 {
     private static clientUidCounter     = 0
     private static clients: WSClientMap = {}
 
-    private static IsClientAuthorized<T extends Token | undefined>(client: WSClient, cond: T extends undefined ? true : false): client is WSClient<T>
+    private static isClientAuthorized<T extends TAccess | undefined>(client: WSClient, cond: T extends undefined ? true : false): client is WSClient<T>
     {
         return typeof client.token === 'undefined' === cond
     }
 
-    public static *GetAuthorizedClients(): Generator<WSClient<Token>>
+    public static *getAuthorizedClients(): Generator<AuthorizedWSClient>
     {
         for(const uid in this.clients)
         {
             const client = this.clients[uid]
-            if(this.IsClientAuthorized<Token>(client, false))
+            if(this.isClientAuthorized<TAccess>(client, false))
                 yield client
         }
     }
 
-    public static *GetUnauthorizedClients(): Generator<WSClient<undefined>>
+    public static *getUnauthorizedClients(): Generator<UnauthorizedWSClient>
     {
         for(const uid in this.clients)
         {
             const client = this.clients[uid]
-            if(this.IsClientAuthorized<undefined>(client, true))
+            if(this.isClientAuthorized<undefined>(client, true))
                 yield client
         }
     }
 
-    public static *GetClientsForCompanyId(companyId: number): Generator<WSClient<Token>>
+    public static *getClientsForCompanyId(companyId: number): Generator<AuthorizedWSClient>
     {
-        for(const client of this.GetAuthorizedClients())
+        for(const client of this.getAuthorizedClients())
         {
             if(client.token.getPayloadField('cid') !== companyId)
                 continue
@@ -118,9 +134,31 @@ export class WSClient<T extends Token | undefined = Token | undefined> extends E
         }
     }
 
-    public static async CreateClient(socket: WebSocket, request: IncomingMessage): Promise<WSClient>
+    public static *getClientsForUserId(userId: number): Generator<AuthorizedWSClient>
     {
-        let token: Token | undefined
+        for(const client of this.getAuthorizedClients())
+        {
+            if(client.token.getPayloadField('cid') !== userId)
+                continue
+
+            yield client
+        }
+    }
+
+    public static *getClientsForLocationId(locationId: number): Generator<AuthorizedWSClient>
+    {
+        for(const client of this.getAuthorizedClients())
+        {
+            if(!client.token.getPayloadField('loc').includes(locationId))
+                continue
+
+            yield client
+        }
+    }
+
+    public static async createClient(socket: WebSocket, request: IncomingMessage): Promise<WSClient>
+    {
+        let token: TAccess | undefined
         if('authorization' in request.headers && typeof request.headers.authorization === 'string')
         {
             token = Token.fromAuthHeader(request.headers.authorization)
@@ -160,10 +198,20 @@ export class WSClient<T extends Token | undefined = Token | undefined> extends E
 
     public send(data: WSClientMessage): void
     {
-        if(!WSClient.IsClientAuthorized<Token>(this, false))
+        if(!WSClient.isClientAuthorized<TAccess>(this, false))
             return
 
         this.socket.send(JSON.stringify(data))
+    }
+
+    public getRemoteAddress(): string
+    {
+        return this.request.socket.remoteAddress ?? '?'
+    }
+
+    public getUid(): number
+    {
+        return this.uid
     }
 
     public destroy(): void
@@ -210,14 +258,14 @@ export class WSClient<T extends Token | undefined = Token | undefined> extends E
                 const parsed = this.parseIncoming(data)
                 if(!parsed) return
     
-                if(WSClient.IsClientAuthorized<Token>(this, false))
+                if(WSClient.isClientAuthorized<TAccess>(this, false))
                 {
-                    log.info(`Client#${this.uid} @ ${this.request.socket.remoteAddress} message:`, parsed)
+                    log.info(`Client#${this.uid} @ ${this.getRemoteAddress()} message:`, parsed)
                     this.emit('message', parsed)
                 }
                 else if(parsed.type === WSClientMessageTypes.authorize)
                 {
-                    log.info(`[UNAUTHORIZED] Client#${this.uid} @ ${this.request.socket.remoteAddress} message:`, parsed)
+                    log.info(`[UNAUTHORIZED] Client#${this.uid} @ ${this.getRemoteAddress()} message:`, parsed)
                     const token = Token.fromAuthHeader(parsed.token)
 
                     if(!token.verify())

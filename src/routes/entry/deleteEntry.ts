@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express'
-import { error } from '../../utils/common'
+import { error, wsbroadcast } from '../../utils/common'
 import { fetchTimeEntries } from '../../utils/fetchfunctions'
 import { sql } from '../../utils/database'
 import log from '../../utils/logger'
@@ -33,6 +33,7 @@ export default function(router: Router)
 
         log.silly(`Time entry was deleted:\n${JSON.stringify(entry, null, 2)}`)
 
+        wsbroadcast(res, companyId, 'deleted', 'TimeEntry', { Id: entryId })
         res.sendStatus(204)
     })
 }

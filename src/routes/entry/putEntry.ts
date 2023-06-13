@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express'
 import log from '../../utils/logger'
-import { error } from '../../utils/common'
+import { error, wsbroadcast } from '../../utils/common'
 import { fetchTimeEntries } from '../../utils/fetchfunctions'
 import isValidKeyOf from '../../utils/isvalidkeyof'
 import { escape, sql, unsafe } from '../../utils/database'
@@ -200,6 +200,8 @@ export default function(router: Router)
                 AND te.Id = ${entryId}
             LIMIT 1`
 
-        res.send((await fetchTimeEntries(companyId, [{ field: 'Id', value: [entryId] }])).get(entryId))
+        const fetched = (await fetchTimeEntries(companyId, [{ field: 'Id', value: [entryId] }])).get(entryId)
+        wsbroadcast(res, companyId, 'updated', 'TimeEntry', fetched)
+        res.send(fetched)
     })
 }

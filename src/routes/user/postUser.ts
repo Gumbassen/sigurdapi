@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express'
-import { error } from '../../utils/common'
+import { error, wsbroadcast } from '../../utils/common'
 import { escape, nullableEpoch, sql, unsafe } from '../../utils/database'
 import log from '../../utils/logger'
 
@@ -165,6 +165,7 @@ export default function(router: Router)
                         ${unsafe(userObj.LocationIds.map(id => `(${escape(userObj.Id)}, ${escape(id)})`).join(','))}`
             }
 
+            wsbroadcast(res, companyId, 'created', 'User', userObj)
             res.status(201).send(userObj)
         }
         catch(_error)

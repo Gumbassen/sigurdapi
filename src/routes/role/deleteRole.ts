@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express'
-import { error } from '../../utils/common'
+import { error, wsbroadcast } from '../../utils/common'
 import { fetchUserRoles } from '../../utils/fetchfunctions'
 import { sql } from '../../utils/database'
 import log from '../../utils/logger'
@@ -33,6 +33,7 @@ export default function(router: Router)
 
         log.silly(`User role was deleted:\n${JSON.stringify(role, null, 2)}`)
 
+        wsbroadcast(res, companyId, 'deleted', 'UserRole', { Id: roleId })
         res.sendStatus(204)
     })
 }

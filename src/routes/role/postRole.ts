@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express'
-import { error } from '../../utils/common'
+import { error, wsbroadcast } from '../../utils/common'
 import { escape, sql, unsafe } from '../../utils/database'
 import log from '../../utils/logger'
 
@@ -127,6 +127,7 @@ export default function(router: Router)
                         ${unsafe(roleObj.PermissionIds.map(id => `(${escape(roleObj.Id)}, ${escape(id)})`).join(','))}`
             }
 
+            wsbroadcast(res, roleObj.CompanyId, 'created', 'UserRole', roleObj)
             res.status(201).send(roleObj)
         }
         catch(_error)

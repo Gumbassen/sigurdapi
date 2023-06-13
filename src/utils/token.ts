@@ -109,8 +109,11 @@ export interface AccessToken extends BaseTokenType {
     /** FiredDate: The users last day of employment (if set) */
     fdt: Nullable<number>
 
-    /* UserRole Permission IDs: All of the users permissions */
+    /** UserRole Permission IDs: All of the users permissions */
     prm: EUserRolePermission[]
+
+    /** Location IDs: Locations that the user is part of */
+    loc: ApiDataTypes.Objects.Location['Id'][]
 }
 
 export interface RefreshToken extends BaseTokenType {

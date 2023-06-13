@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express'
-import { error } from '../../utils/common'
+import { error, wsbroadcast } from '../../utils/common'
 import { SQLNoResultError, fetchFullTimetag } from '../../utils/fetchfunctions'
 import log from '../../utils/logger'
 import isValidKeyOf from '../../utils/isvalidkeyof'
@@ -142,6 +142,8 @@ export default function(router: Router)
             return Promise.reject(_error)
         })
 
-        res.send(await fetchFullTimetag(companyId, timetagId))
+        const fetched = await fetchFullTimetag(companyId, timetagId)
+        wsbroadcast(res, companyId, 'updated', 'TimeTag', fetched)
+        res.send(fetched)
     })
 }
