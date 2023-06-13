@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express'
-import { error } from '../../utils/common'
-import { SQLNoResultError, fetchLocation } from '../../utils/fetchfunctions'
+import { error, wsbroadcast } from '../../utils/common'
+import { fetchLocation } from '../../utils/fetchfunctions'
 import { sql } from '../../utils/database'
 
 export default function(router: Router)
@@ -14,14 +14,8 @@ export default function(router: Router)
         if(Number.isNaN(locationId))
             return error(res, 400, 'Invalid URL')
 
-        const location = await fetchLocation(companyId, locationId).catch(_error =>
-        {
-            if(!(_error instanceof SQLNoResultError))
-                throw _error
-
-            return error(res, 404, 'Location not found')
-        })
-        if(!location) return
+        const location = await fetchLocation(companyId, locationId, false)
+        if(!location) return error(res, 404, 'Location not found')
 
         const result = await sql`
             DELETE FROM
@@ -34,6 +28,7 @@ export default function(router: Router)
         if(result.affectedRows < 1)
             return error(res, 500, 'Failed to delete location')
 
+        wsbroadcast(res, companyId, 'deleted', 'Location', { Id: locationId })
         res.sendStatus(204)
     })
 }

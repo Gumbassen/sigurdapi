@@ -87,10 +87,10 @@ Endpoints med _WS_ bliver også broadcasted til WebSocket serveren.
 | WS | Method     | URL                                               | Comments |
 |----|------------|---------------------------------------------------|----------|
 |    | __GET__    | /location                                         |          |
-|    | __POST__   | /location                                         |          |
+| X  | __POST__   | /location                                         |          |
 |    | __GET__    | /location/__{locationId}__                        |          |
 | X  | __PUT__    | /location/__{locationId}__                        |          |
-|    | __DELETE__ | /location/__{locationId}__                        |          |
+| X  | __DELETE__ | /location/__{locationId}__                        |          |
 |    | __GET__    | /location/__{locationId}__/users                  |          |
 |    | __GET__    | /location/__{locationId}__/leaders                |          |
 |    | __POST__   | /location/__{locationId}__/leaders/__{leaderId}__ |          |

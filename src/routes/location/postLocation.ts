@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express'
-import { error } from '../../utils/common'
+import { error, wsbroadcast } from '../../utils/common'
 import { escape, sql, unsafe } from '../../utils/database'
 import log from '../../utils/logger'
 
@@ -9,7 +9,8 @@ export default function(router: Router)
 {
     router.post('/', async (req: Request, res: Response) =>
     {
-        const token = res.locals.accessToken!
+        const token     = res.locals.accessToken!
+        const companyId = token.getPayloadField('cid')
 
         const requiredProps: (keyof ApiLocation)[] = ['Name']
 
@@ -19,8 +20,8 @@ export default function(router: Router)
         ]
 
         // @ts-expect-error Im using this to build the object
-        const entry: ApiLocation = {
-            CompanyId: token.getPayloadField('cid'),
+        const location: ApiLocation = {
+            CompanyId: companyId,
             LeaderIds: [],
         }
 
@@ -48,7 +49,7 @@ export default function(router: Router)
                         return error(res, 400, `Param "${field}" cannot be empty.`)
                     }
 
-                    entry[field] = value
+                    location[field] = value
                     break
 
                 case 'LeaderIds':
@@ -63,10 +64,10 @@ export default function(router: Router)
                         if(Number.isNaN(id))
                             return error(res, 400, `Param "${field}" contains invalid entries.`)
 
-                        if(entry.LeaderIds.includes(id))
+                        if(location.LeaderIds.includes(id))
                             continue
 
-                        entry.LeaderIds.push(id)
+                        location.LeaderIds.push(id)
                     }
                     break
             }
@@ -74,8 +75,21 @@ export default function(router: Router)
 
 
         const permissionChecks = new Map<string, string>()
-        if(entry.LeaderIds.length)
-            permissionChecks.set('LeaderIds', `(${escape(entry.LeaderIds)} IN (SELECT Id FROM users WHERE CompanyId = ${escape(entry.CompanyId)})) AS LeaderIds`)
+        if(location.LeaderIds.length)
+        {
+            const sortedLeaderIds = location.LeaderIds.unique().sort()
+            permissionChecks.set('LeaderIds', /*SQL*/`(
+                SELECT
+                    GROUP_CONCAT(DISTINCT u.Id ORDER BY u.Id ASC SEPERATOR ',') = ${escape(sortedLeaderIds.join(','))}
+                FROM
+                    users AS u
+                WHERE
+                    u.CompanyId = ${escape(location.CompanyId)}
+                    AND u.Id IN (${escape(location.LeaderIds)})
+                GROUP BY
+                    u.Id
+            ) AS LeaderIds `)
+        }
 
         if(permissionChecks.size)
         {
@@ -90,19 +104,19 @@ export default function(router: Router)
 
         try
         {
-            const locationResult = await sql`
+            const result = await sql`
                 INSERT INTO
                     locations
                 SET
-                    CompanyId   = ${entry.CompanyId},
-                    Name        = ${entry.Name},
-                    Description = ${entry.Description ?? null}`
+                    CompanyId   = ${location.CompanyId},
+                    Name        = ${location.Name},
+                    Description = ${location.Description ?? null}`
 
-            entry.Id = locationResult.insertId
+            location.Id = result.insertId
 
-            log.silly(`Location was created:\n${JSON.stringify(entry, null, 2)}`)
+            log.silly(`Location was created:\n${JSON.stringify(location, null, 2)}`)
 
-            if(entry.LeaderIds.length)
+            if(location.LeaderIds.length)
             {
                 await sql`
                     INSERT INTO
@@ -112,10 +126,11 @@ export default function(router: Router)
                             UserId
                         )
                     VALUES
-                        ${unsafe(entry.LeaderIds.map(id => `(${escape(entry.Id)}, ${escape(id)})`).join(','))}`
+                        ${unsafe(location.LeaderIds.map(id => `(${escape(location.Id)}, ${escape(id)})`).join(','))}`
             }
 
-            res.status(201).send(entry)
+            wsbroadcast(res, companyId, 'created', 'Location', location)
+            res.status(201).send(location)
         }
         catch(_error)
         {
