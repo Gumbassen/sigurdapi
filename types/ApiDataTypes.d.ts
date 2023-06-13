@@ -142,6 +142,12 @@ declare namespace ApiDataTypes {
             WithMessages: false
             Messages:     undefined
         })
+
+        interface TimeEntryType {
+            Id:        number
+            CompanyId: number
+            Name:      string
+        }
     }
 
     declare namespace Responses {

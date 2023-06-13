@@ -1121,3 +1121,64 @@ export async function fetchLogin(username: string, password: string): Promise<{ 
         CompanyId: result[0].CompanyId,
     }
 }
+
+export async function fetchTimeEntryTypes(companyId: number): Promise<Map<number, ApiDataTypes.Objects.TimeEntryType>>
+export async function fetchTimeEntryTypes(companyId: number, field: 'Id', entryTypeIds: number[]): Promise<Map<number, ApiDataTypes.Objects.TimeEntryType>>
+export async function fetchTimeEntryTypes(companyId: number, field: 'Id' | 'None' = 'None', values?: number[]): Promise<Map<number, ApiDataTypes.Objects.TimeEntryType>>
+{
+    if(field !== 'None' && typeof values === 'undefined')
+        throw new Error('Invalid parameters. "values" is required if "field" isnt "None"')
+
+    const clauses: string[] = []
+    switch(field)
+    {
+        case 'Id':
+            if(!Array.isArray(values))
+                throw new Error('values must be an array')
+
+            if(!values.length)
+                return new Map()
+
+            clauses.push(/*SQL*/`tet.${field} IN (${escape(values)})`)
+            break
+
+        case 'None':
+            if(typeof values !== 'undefined')
+                throw new Error('values must be undefined')
+            break
+    }
+
+    const results = await sql`
+        SELECT
+            tet.Id   AS Id,
+            tet.Name AS Name
+        FROM
+            time_entry_types AS tet
+        WHERE
+            tet.CompanyId = ${companyId}
+            ${unsafe(collapseClauses(clauses))}`
+
+    const types = new Map<number, ApiDataTypes.Objects.TimeEntryType>()
+    for(const row of results)
+    {
+        types.set(row.Id, {
+            Id:        row.Id,
+            CompanyId: companyId,
+            Name:      row.Name,
+        })
+    }
+
+    return types
+}
+
+export async function fetchTimeEntryType(companyId: number, entryTypeId: number): Promise<ApiDataTypes.Objects.TimeEntryType>
+export async function fetchTimeEntryType(companyId: number, entryTypeId: number, throwOnNoResult: false): Promise<ApiDataTypes.Objects.TimeEntryType | undefined>
+export async function fetchTimeEntryType(companyId: number, entryTypeId: number, throwOnNoResult = true): Promise<ApiDataTypes.Objects.TimeEntryType | undefined>
+{
+    const types = await fetchTimeEntryTypes(companyId, 'Id', [entryTypeId])
+
+    if(!types.has(entryTypeId) && throwOnNoResult)
+        throw new SQLNoResultError(`[CID=${companyId}] Timeentry type ID="${entryTypeId}" not found`)
+
+    return types.get(entryTypeId)
+}

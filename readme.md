@@ -83,7 +83,7 @@ Endpoints med _WS_ bliver også broadcasted til WebSocket serveren.
 |    | __GET__    | /timetag/__{timeTagId}__/rules/__{ruleId}__ |                                                                       |
 | X  | __DELETE__ | /timetag/__{timeTagId}__/rules/__{ruleId}__ |                                                                       |
 
-## Location
+## Location [_Finished_]
 | WS | Method     | URL                                               | Comments |
 |----|------------|---------------------------------------------------|----------|
 |    | __GET__    | /location                                         |          |
@@ -109,3 +109,8 @@ Endpoints med _WS_ bliver også broadcasted til WebSocket serveren.
 |    | __DELETE__ | /role/__{roleId}__/permission/__{permissionId}__ |          |
 |    | __GET__    | /roles/permission                                |          |
 |    | __GET__    | /roles/permission/__{permissionId}__             |          |
+
+## Entrytype
+| WS | Method  | URL        | Comments |
+|----|---------|------------|----------|
+|    | __GET__ | /entrytype |          |
