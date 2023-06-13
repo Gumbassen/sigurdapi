@@ -111,7 +111,8 @@ Endpoints med _WS_ bliver også broadcasted til WebSocket serveren.
 |    | __GET__    | /roles/permission/__{permissionId}__             |          |
 
 ## Entrytype
-| WS | Method  | URL                              | Comments |
-|----|---------|----------------------------------|----------|
-|    | __GET__ | /entrytype                       |          |
-|    | __GET__ | /entrytype/__{timeEntryTypeId}__ |          |
+| WS | Method     | URL                              | Comments |
+|----|------------|----------------------------------|----------|
+|    | __GET__    | /entrytype                       |          |
+|    | __GET__    | /entrytype/__{timeEntryTypeId}__ |          |
+| X  | __DELETE__ | /entrytype/__{timeEntryTypeId}__ |          |
