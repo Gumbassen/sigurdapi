@@ -116,4 +116,5 @@ Endpoints med _WS_ bliver også broadcasted til WebSocket serveren.
 |    | __GET__    | /entrytype                       |          |
 | X  | __POST__   | /entrytype                       |          |
 |    | __GET__    | /entrytype/__{timeEntryTypeId}__ |          |
+| X  | __PUT__    | /entrytype/__{timeEntryTypeId}__ |          |
 | X  | __DELETE__ | /entrytype/__{timeEntryTypeId}__ |          |
