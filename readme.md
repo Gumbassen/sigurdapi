@@ -6,7 +6,20 @@ Du kan altid se swagger på:
 
 Selve API'en er tilgængelig på samme host ([127.0.0.1:6969](http://127.0.0.1:6969)).
 
-WebSocket serveren er på [127.0.0.1:7070](ws://127.0.0.1:7070).  
+~~WebSocket serveren er på [127.0.0.1:7070](ws://127.0.0.1:7070).  ~~ __Ikke alligevel__ 😅  
+WebSocket serveren er på [ws://127.0.0.1:6969/ws](ws://127.0.0.1:6969/ws)
+
+Det skal lige siges at, hvis din klient _kan_ bruge headere i din connection request, så brug authorization-headeren til at give din token.  
+Ellers skal du sende en besked når forbindelsen er åbnet med dette indhold:
+```json
+{
+  type:  'action',
+  token: '[[DIN TOKEN]]',
+}
+```
+
+Ellers får din klient ingen beskeder.
+
 Husk at websockets kører på deres egen protokol, så der skal stå "ws://" foran, ikke "http://".
 
 ---
@@ -33,7 +46,7 @@ Husk at websockets kører på deres egen protokol, så der skal stå "ws://" for
  - __[DELETE]__ /entry/__{entryId}__
  - __[GET]__ /entry/__{entryId}__/messages  
    Sender tomt array selvom der ikke findes en User med det givne ID.
- - __[POST]__ /entry/__{entryId}__/messages
+ - __[POST]__ /entry/__{entryId}__/messages __[WS!]__
 
 ## User [_Finished_]
  - __[GET]__ /users

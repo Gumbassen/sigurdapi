@@ -25,6 +25,7 @@ import userpermissions from './utils/userpermissions'
 import nocache from 'nocache'
 import requestlog from './middlewares/requestlog'
 import notfound404 from './middlewares/notfound404'
+import wsserver from './wsserver/wsserver'
 
 if(usingDotenvExample)
 {
@@ -72,6 +73,7 @@ app.use(authmw({
     },
     accessFilters: [],
 }))
+app.use(wsserver.middleware())
 
 
 // Swagger routes
@@ -110,14 +112,22 @@ Promise.all([
     return userpermissions.verifyDatabase()
 }).then(() =>
 {
-    // In order to handle 404 for pages that doesnt exist, I have to add the middleware as the last in the stack.
-    app.use(notfound404())
-
     // Start the server
-    app.listen(port, () =>
+    const server = app.listen(port, () =>
     {
         log.info(`⚡ [EXPRESS] Listening on port ${port}`)
     })
+
+    wsserver.initialize({
+        path:   '/ws',
+        server: server,
+    }).then(() =>
+    {
+        log.info('⚡ [WEBSOCKET] Initialized.')
+    })
+
+    // In order to handle 404 for pages that doesnt exist, I have to add the middleware as the last in the stack.
+    app.use(notfound404())
 }).catch(errors =>
 {
     const errorMessage = Array.isArray(errors) ? errors.map(String).join('\n\t') : String(errors)

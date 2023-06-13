@@ -172,6 +172,29 @@ interface WinstonLikeLogger
     fatal:   (...args: unknown[]) => (ILogObj & ILogObjMeta) | undefined
 }
 
+const logList = new Map<string, WinstonLikeLogger>()
+export function getNamedLogger(name: string): WinstonLikeLogger
+{
+    if(!logList.has(name))
+    {
+        const formattedName = `[${name.toUpperCase()}]`
+
+        logList.set(name, {
+            /* eslint-disable brace-style */
+            get silly()   { return logger.log.bind(logger, 0, 'SILLY',   formattedName) },
+            get debug()   { return logger.log.bind(logger, 1, 'DEBUG',   formattedName) },
+            get verbose() { return logger.log.bind(logger, 2, 'VERBOSE', formattedName) },
+            get http()    { return logger.log.bind(logger, 3, 'HTTP',    formattedName) },
+            get info()    { return logger.log.bind(logger, 4, 'INFO',    formattedName) },
+            get warn()    { return logger.log.bind(logger, 5, 'WARN',    formattedName) },
+            get error()   { return logger.log.bind(logger, 6, 'ERROR',   formattedName) },
+            get fatal()   { return logger.log.bind(logger, 7, 'FATAL',   formattedName) },
+            /* eslint-enable brace-style */
+        })
+    }
+    return logList.get(name)!
+}
+
 const log: WinstonLikeLogger = {
     /* eslint-disable brace-style */
     get silly()   { return logger.log.bind(logger, 0, 'SILLY') },

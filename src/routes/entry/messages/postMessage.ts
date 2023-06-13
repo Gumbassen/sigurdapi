@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express'
 import log from '../../../utils/logger'
-import { error } from '../../../utils/common'
+import { error, wsbroadcast } from '../../../utils/common'
 import { escape, sql, sqlMulti, unsafe } from '../../../utils/database'
 
 export default function(router: express.Router)
@@ -95,6 +95,8 @@ export default function(router: express.Router)
             messageObj.CreatedAt = result.CreatedAt
 
             log.silly(`Time entry message was created:\n${JSON.stringify(messageObj, null, 2)}`)
+
+            wsbroadcast(res, companyId, 'created', 'TimeEntryMessage', messageObj)
 
             res.status(201).send(messageObj)
         }

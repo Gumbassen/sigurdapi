@@ -16,7 +16,15 @@ log.silly(`Spilled the beans! JWT Secret: ${SECRET}`)
 
 
 // Custom errors
-export class TokenInvalidError extends Error
+export abstract class TokenError extends Error
+{
+    constructor(message?: string)
+    {
+        super(message)
+    }
+}
+
+export class TokenInvalidError extends TokenError
 {
     constructor(message?: string)
     {
@@ -25,7 +33,7 @@ export class TokenInvalidError extends Error
     }
 }
 
-export class TokenMissingError extends Error
+export class TokenMissingError extends TokenError
 {
     constructor(message?: string)
     {
@@ -34,7 +42,7 @@ export class TokenMissingError extends Error
     }
 }
 
-export class TokenExpiredError extends Error
+export class TokenExpiredError extends TokenError
 {
     constructor(message?: string)
     {
@@ -42,7 +50,7 @@ export class TokenExpiredError extends Error
     }
 }
 
-export class TokenUnsupportedAlgorithmError extends Error
+export class TokenUnsupportedAlgorithmError extends TokenError
 {
     constructor(algorithm: string)
     {
