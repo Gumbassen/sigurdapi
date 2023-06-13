@@ -1571,6 +1571,45 @@
       }
     },
     "/location/{locationId}": {
+      "get": {
+        "tags": [
+          "location"
+        ],
+        "summary": "Returns a specific location",
+        "parameters": [
+          {
+            "name": "locationId",
+            "in": "path",
+            "description": "The ID of the location",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Location"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
       "put": {
         "tags": [
           "location"
