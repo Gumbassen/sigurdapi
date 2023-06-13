@@ -6,8 +6,13 @@ import Token, { AccessToken, TokenInvalidError } from '../utils/token'
 import { IncomingMessage } from 'http'
 import { getNamedLogger } from '../utils/logger'
 import { WSClientError } from './WSClientError'
+import { randomFillSync } from 'crypto'
 
 const log = getNamedLogger('WSCLIENT')
+
+export const WSCLIENT_AUTHORIZATION_TIMEOUT = 10_000
+export const WSCLIENT_PING_INTERVAL         = 30_000
+export const WSCLIENT_PING_TIMEOUT          = 10_000
 
 export type WSClientMap = {
     [_: WSClient['uid']]: WSClient
@@ -15,6 +20,7 @@ export type WSClientMap = {
 
 export enum WSClientMessageTypes {
     ping      = 'ping',
+    pong      = 'pong',
     action    = 'action',
     authorize = 'authorize',
 }
@@ -24,7 +30,13 @@ export interface WSClientBaseMessage {
 }
 
 export interface WSClientPingMessage extends WSClientBaseMessage {
-    type: WSClientMessageTypes.ping
+    type:      WSClientMessageTypes.ping
+    challenge: string
+}
+
+export interface WSClientPongMessage extends WSClientBaseMessage {
+    type:   WSClientMessageTypes.pong
+    answer: string
 }
 
 export enum WSClientActionModelNames {
@@ -68,7 +80,7 @@ export interface WSClientActionMessage extends WSClientBaseMessage {
     /**
      * The updated data as it would have been returned from the REST API.
      * 
-     * If the action is "deleted", then this will be undefined.
+     * If the action is "deleted", then this will only contain a single "Id"-property.
      */
     data: unknown
 }
@@ -86,12 +98,20 @@ export interface WSClientAuthorizeMessage {
 }
 
 export type WSClientMessage = WSClientPingMessage
+    | WSClientPongMessage
     | WSClientActionMessage
     | WSClientAuthorizeMessage
 
 declare type TAccess              = Token<AccessToken>
 declare type AuthorizedWSClient   = WSClient<TAccess>
 declare type UnauthorizedWSClient = WSClient<undefined>
+
+function randomHexString(length: number): string
+{
+    const challenge = new Uint8Array(Math.ceil(length / 2))
+    randomFillSync(challenge)
+    return challenge.reduce((s, b) => s + b.toString(16).padZero(2), '')
+}
 
 export class WSClient<T extends TAccess | undefined = TAccess | undefined> extends EventEmitter
 {
@@ -101,6 +121,12 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
     private static isClientAuthorized<T extends TAccess | undefined>(client: WSClient, cond: T extends undefined ? true : false): client is WSClient<T>
     {
         return typeof client.token === 'undefined' === cond
+    }
+
+    public static *getAllClients(): Generator<WSClient>
+    {
+        for(const uid in this.clients)
+            yield this.clients[uid]
     }
 
     public static *getAuthorizedClients(): Generator<AuthorizedWSClient>
@@ -180,6 +206,10 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
     private isInitialized = false
     private isDestroyed   = false
 
+    private challengeNonce?:       string
+    private challengeInterval?:     NodeJS.Timeout
+    private authorizationTimeout?: NodeJS.Timeout
+
     private socketErrorHandler?:   (error: Error) => void
     private socketMessageHandler?: (data: RawData, isBinary: boolean) => void
     private socketCloseHandler?:   (code: number, reason: Buffer) => void
@@ -194,14 +224,53 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
         this.token    = token
 
         this.initialize()
+
+        this.authorizationTimeout = setTimeout(() =>
+        {
+            this.authorizationTimeout = undefined
+            if(this.token) return
+
+            log.silly(`Client#${this.uid} authorization timeout`)
+            this.destroy()
+        }, WSCLIENT_AUTHORIZATION_TIMEOUT)
+
+        this.challengeInterval = setInterval(() =>
+        {
+            if(this.challengeNonce !== undefined)
+            {
+                log.silly(`Client#${this.uid} ping timeout`)
+                this.destroy()
+                return
+            }
+
+            this.challengeNonce = randomHexString(10)
+            this.send({
+                type:      WSClientMessageTypes.ping,
+                challenge: this.challengeNonce,
+            })
+            log.silly(`Client#${this.uid} new challenge: ${this.challengeNonce}`)
+        }, WSCLIENT_PING_INTERVAL)
     }
 
     public send(data: WSClientMessage): void
     {
         if(!WSClient.isClientAuthorized<TAccess>(this, false))
-            return
+            return void log.silly(`Client#${this.uid} didnt send (no auth)`)
 
-        this.socket.send(JSON.stringify(data))
+        if(!this.isReady())
+            return void log.silly(`Client#${this.uid} didnt send (not ready)`)
+
+        this.socket.send(JSON.stringify(data), err => err ? log.error('Failed to send', err) : undefined)
+    }
+
+    public isReady(): boolean
+    {
+        return this.socket.readyState === WebSocket.OPEN
+    }
+
+    public isClosed(): boolean
+    {
+        return this.socket.readyState === WebSocket.CLOSED || this.socket.readyState === WebSocket.CLOSING
     }
 
     public getRemoteAddress(): string
@@ -226,6 +295,12 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
             this.socket.off('message', this.socketMessageHandler!)
             this.socket.off('close', this.socketCloseHandler!)
         }
+
+        if(this.socket.readyState === WebSocket.OPEN)
+            this.socket.close()
+
+        clearTimeout(this.authorizationTimeout)
+        clearInterval(this.challengeInterval)
 
         delete WSClient.clients[this.uid]
     }
@@ -257,29 +332,53 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
             {
                 const parsed = this.parseIncoming(data)
                 if(!parsed) return
-    
-                if(WSClient.isClientAuthorized<TAccess>(this, false))
+
+                switch(parsed.type)
                 {
-                    log.info(`Client#${this.uid} @ ${this.getRemoteAddress()} message:`, parsed)
-                    this.emit('message', parsed)
-                }
-                else if(parsed.type === WSClientMessageTypes.authorize)
-                {
-                    log.info(`[UNAUTHORIZED] Client#${this.uid} @ ${this.getRemoteAddress()} message:`, parsed)
-                    const token = Token.fromAuthHeader(parsed.token)
+                    case WSClientMessageTypes.authorize:
+                        log.info(`[UNAUTHORIZED] Client#${this.uid} @ ${this.getRemoteAddress()} message:`, parsed)
+                        // eslint-disable-next-line no-case-declarations
+                        const token = Token.fromAuthHeader(parsed.token)
 
-                    if(!token.verify())
-                    {
-                        this.emit('error', new WSClientError(this, {
-                            type: 'AUTH_FAILED',
-                        }, undefined, 'Authorization failed, invalid token'))
-                        return
-                    }
+                        if(!token.verify())
+                        {
+                            this.emit('error', new WSClientError(this, {
+                                type: 'AUTH_FAILED',
+                            }, undefined, 'Authorization failed, invalid token'))
+                            return
+                        }
 
-                    // @ts-expect-error This is allowed, as typescript doesnt use actual generics. They are all fake, an illusion.
-                    this.token = token
+                        // @ts-expect-error This is allowed, as typescript doesnt use actual generics. They are all fake, an illusion.
+                        this.token = token
+                        clearTimeout(this.authorizationTimeout)
+                        this.authorizationTimeout = undefined
 
-                    log.info(`Client#${this.uid} authorized using a message`)
+                        log.info(`Client#${this.uid} authorized using a message`)
+                        break
+
+                    case WSClientMessageTypes.pong:
+                        log.silly(`Client#${this.uid} PONG!`)
+                        if(this.challengeNonce !== undefined)
+                        {
+                            if(parsed.answer !== this.challengeNonce)
+                            {
+                                log.silly(`Client#${this.uid} answered with the wrong challenge answer.`)
+                                this.destroy()
+                                return
+                            }
+                            this.challengeNonce = undefined
+                        }
+                        break
+
+                    default:
+                        if(!WSClient.isClientAuthorized<TAccess>(this, false))
+                        {
+                            log.silly(`Client#${this.uid} tried to send a message without being authorized.`, parsed)
+                            break
+                        }
+                        log.silly(`Client#${this.uid} message:`, parsed)
+                        this.emit('message', parsed)
+                        break
                 }
             }
             catch(error)
@@ -320,3 +419,16 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
         return parsed as M
     }
 }
+
+process.on('beforeExit', () =>
+{
+    log.silly('Destroying active clients...')
+    for(const client of WSClient.getAllClients())
+    {
+        if(!client.isReady())
+            continue
+
+        log.silly(`Destroyed client#${client.getUid()}`)
+        client.destroy()
+    }
+})
