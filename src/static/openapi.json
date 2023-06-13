@@ -34,6 +34,10 @@
     {
       "name": "role",
       "description": "Everything userroles"
+    },
+    {
+      "name": "entrytype",
+      "description": "Everything time-entry types"
     }
   ],
   "paths": {
@@ -2227,6 +2231,189 @@
           }
         }
       }
+    },
+    "/entrytype": {
+      "get": {
+        "tags": [
+          "entrytype"
+        ],
+        "summary": "Returns all timeentry types",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TimeEntryType"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "entrytype"
+        ],
+        "summary": "Creates a new timeentry type",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeEntryTypeCreationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeEntryType"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          }
+        }
+      }
+    },
+    "/entrytype/{entrytypeId}": {
+      "get": {
+        "tags": [
+          "entrytype"
+        ],
+        "summary": "Returns a timeentry type",
+        "parameters": [
+          {
+            "name": "entrytypeId",
+            "in": "path",
+            "description": "The timeentry type ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeEntryType"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "entrytype"
+        ],
+        "summary": "Updates a timeentry type",
+        "parameters": [
+          {
+            "name": "entrytypeId",
+            "in": "path",
+            "description": "The timeentry type ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeEntryTypeCreationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The resource has been updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeEntryType"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "entrytype"
+        ],
+        "summary": "Deletes a timeentry type",
+        "parameters": [
+          {
+            "name": "entrytypeId",
+            "in": "path",
+            "description": "The timeentry type ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The resource has been deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotAuthenticatedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAllowedError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
     }
   },
   "security": [
@@ -2650,6 +2837,14 @@
             "type": "integer",
             "format": "int32"
           },
+          "Name": {
+            "type": "string"
+          }
+        }
+      },
+      "TimeEntryTypeCreationRequest": {
+        "type": "object",
+        "properties": {
           "Name": {
             "type": "string"
           }
