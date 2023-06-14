@@ -447,7 +447,7 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
     }
 }
 
-process.on('beforeExit', () => // TODO: Does this even work??
+process.on('exit', () =>
 {
     log.silly('Destroying active clients...')
     for(const client of WSClient.getAllClients())
