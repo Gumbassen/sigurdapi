@@ -3,32 +3,31 @@ import { error, wsbroadcast } from '../../utils/common'
 import { escape, sql, unsafe } from '../../utils/database'
 import log from '../../utils/logger'
 
-interface TimeEntryWithDates extends ApiDataTypes.Objects.TimeEntry {
-    StartDate?: Date
-    EndDate?:   Date
-}
+type ApiTimeEntry = ApiDataTypes.Objects.TimeEntry
 
 export default function(router: Router)
 {
     router.post('/', async (req: Request, res: Response) =>
     {
-        const requiredProps: (keyof ApiDataTypes.Objects.TimeEntry)[] = [
+        const token     = res.locals.accessToken!
+        const companyId = token.getPayloadField('cid')
+
+        const requiredProps: (keyof ApiTimeEntry)[] = [
             'UserId',
             'Start',
             'End',
             'LocationId',
         ]
 
-        const optionalProps: (keyof ApiDataTypes.Objects.TimeEntry)[] = [
+        const optionalProps: (keyof ApiTimeEntry)[] = [
             'GroupingId',
             'TimeEntryTypeId',
         ]
 
-        // @ts-expect-error Im using this to build the object
-        const entry: TimeEntryWithDates = {
-            CompanyId: res.locals.accessToken!.getPayloadField('cid'),
+        const partialEntry: Partial<ApiTimeEntry> = {
+            CompanyId:  companyId,
+            MessageIds: [],
         }
-
         for(const field of requiredProps.concat(optionalProps))
         {
             if(!(field in req.body) || req.body[field] === null)
@@ -52,13 +51,16 @@ export default function(router: Router)
                 case 'TimeEntryTypeId':
                 case 'Start':
                 case 'End':
-                    entry[field] = value
+                    partialEntry[field] = value
                     break
             }
         }
+        const entry = partialEntry as ApiTimeEntry
+
 
         if(entry.Start >= entry.End)
             return error(res, 400, 'Param "Start" cannot be on or after "End".')
+        entry.Duration = entry.End - entry.Start
 
 
         const permissionChecks = new Map<string, string>()
@@ -118,10 +120,6 @@ export default function(router: Router)
             }
         }
 
-        entry.StartDate  = new Date(entry.Start)
-        entry.EndDate    = new Date(entry.End)
-        entry.Duration   = entry.EndDate.getTime() - entry.StartDate.getTime()
-        entry.MessageIds = []
 
         try
         {
@@ -131,18 +129,15 @@ export default function(router: Router)
                 SET
                     CompanyId       = ${entry.CompanyId},
                     UserId          = ${entry.UserId},
-                    Start           = ${entry.StartDate},
-                    End             = ${entry.EndDate},
+                    Start           = FROM_UNIXTIME(${entry.Start}),
+                    End             = FROM_UNIXTIME(${entry.End}),
                     Duration        = ${entry.Duration},
                     GroupingId      = ${entry.GroupingId ?? null},
                     LocationId      = ${entry.LocationId},
                     TimeEntryTypeId = ${entry.TimeEntryTypeId ?? null}`
-
             entry.Id = result.insertId
 
             log.silly(`Time entry was created:\n${JSON.stringify(entry, null, 2)}`)
-            delete entry.StartDate
-            delete entry.EndDate
 
             wsbroadcast(res, entry.CompanyId, 'created', 'TimeEntry', entry)
             res.status(201).send(entry)
