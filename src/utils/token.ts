@@ -12,8 +12,6 @@ if(typeof process.env.JWT_SECRET !== 'string')
 const        SECRET         = process.env.JWT_SECRET
 export const ALLOW_ALG_NONE = process.env.JWT_ALLOW_ALG_NONE === '1'
 
-log.silly(`Spilled the beans! JWT Secret: ${SECRET}`)
-
 
 // Custom errors
 export abstract class TokenError extends Error
