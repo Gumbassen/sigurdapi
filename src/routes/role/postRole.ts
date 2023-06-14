@@ -65,27 +65,24 @@ export default function(router: Router)
         {
             permissionChecks.set('Name', /*SQL*/`(
                 SELECT
-                    COUNT(Id) = 0
+                    COUNT(ur.Id) = 0
                 FROM
-                    user_roles
+                    user_roles AS ur
                 WHERE
-                    CompanyId = ${escape(roleObj.CompanyId)}
-                    AND Name = ${escape(roleObj.Name)}
+                    ur.CompanyId = ${escape(roleObj.CompanyId)}
+                    AND ur.Name = ${escape(roleObj.Name)}
             ) AS Name `)
         }
 
         if(roleObj.PermissionIds)
         {
             permissionChecks.set('PermissionIds', /*SQL*/`(
-                ${escape(roleObj.PermissionIds)} IN (
-                    SELECT
-                        Id
-                    FROM
-                        time_entry_types
-                    WHERE
-                        CompanyId = ${escape(roleObj.CompanyId)}
-                        AND Id IN (${escape(roleObj.PermissionIds)})
-                )
+                SELECT
+                    COUNT(urp.Id) = ${escape(roleObj.PermissionIds.length)}
+                FROM
+                    user_role_permissions AS urp
+                WHERE
+                    urp.Id IN (${escape(roleObj.PermissionIds)})
             ) AS PermissionIds `)
         }
 
