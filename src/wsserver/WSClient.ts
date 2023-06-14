@@ -5,8 +5,9 @@ import EventEmitter from 'events'
 import Token, { AccessToken, TokenInvalidError } from '../utils/token'
 import { IncomingMessage } from 'http'
 import { getNamedLogger } from '../utils/logger'
-import { WSClientError } from './WSClientError'
-import { randomFillSync } from 'crypto'
+import { WSClientError, WSClientErrorData } from './WSClientError'
+import { WSClientMessage, WSClientMessageTypes } from './WSClientMessages'
+import randomHexString from '../utils/randomHexString'
 
 const log = getNamedLogger('WSCLIENT')
 
@@ -14,114 +15,33 @@ export const WSCLIENT_AUTHORIZATION_TIMEOUT = 10_000
 export const WSCLIENT_PING_INTERVAL         = 30_000
 export const WSCLIENT_PING_TIMEOUT          = 10_000
 
-export type WSClientMap = {
-    [_: WSClient['uid']]: WSClient
-}
-
-export enum WSClientMessageTypes {
-    ping      = 'ping',
-    pong      = 'pong',
-    action    = 'action',
-    authorize = 'authorize',
-}
-
-export interface WSClientBaseMessage {
-    type: WSClientMessageTypes
-}
-
-export interface WSClientPingMessage extends WSClientBaseMessage {
-    type:      WSClientMessageTypes.ping
-    challenge: string
-}
-
-export interface WSClientPongMessage extends WSClientBaseMessage {
-    type:   WSClientMessageTypes.pong
-    answer: string
-}
-
-export enum WSClientActionModelNames {
-    TimeEntry               = 'TimeEntry',
-    TimeEntryTypeCollection = 'TimeEntryTypeCollection',
-    TimeEntryType           = 'TimeEntryType',
-    User                    = 'User',
-    TimeTag                 = 'TimeTag',
-    UserRole                = 'UserRole',
-    Location                = 'Location',
-    TimeTagRule             = 'TimeTagRule',
-    TimeEntryMessage        = 'TimeEntryMessage',
-}
-
-export interface WSClientActionMessage extends WSClientBaseMessage {
-    /**
-     * The message type.
-     */
-    type: WSClientMessageTypes.action
-
-    /**
-     * The company ID that this message is broadcasted to.
-     */
-    companyId: number
-
-    /**
-     * How the "model" has changed.
-     */
-    action: 'created' | 'deleted' | 'updated' | 'other'
-
-    /**
-     * Name of the "model" that is changed.
-     */
-    name: WSClientActionModelNames | keyof typeof WSClientActionModelNames
-
-    /**
-     * The URL that triggered this broadcast.
-     */
-    url: string
-
-    /**
-     * The updated data as it would have been returned from the REST API.
-     * 
-     * If the action is "deleted", then this will only contain a single "Id"-property.
-     */
-    data: unknown
-}
-
-export interface WSClientAuthorizeMessage {
-    /**
-     * The message type.
-     */
-    type: WSClientMessageTypes.authorize
-
-    /**
-     * The token to authorize with.
-     */
-    token: string
-}
-
-export type WSClientMessage = WSClientPingMessage
-    | WSClientPongMessage
-    | WSClientActionMessage
-    | WSClientAuthorizeMessage
-
 declare type TAccess              = Token<AccessToken>
 declare type AuthorizedWSClient   = WSClient<TAccess>
 declare type UnauthorizedWSClient = WSClient<undefined>
 
+type WSCSocketErrorHandlerFunc   = (error: Error) => void
+type WSCSocketMessageHandlerFunc = (data: RawData, isBinary: boolean) => void
+type WSCSocketCloseHandlerFunc   = (code: number, reason: Buffer) => void
 
-type WSClientSocketErrorHandlerFunc   = (error: Error) => void
-type WSClientSocketMessageHandlerFunc = (data: RawData, isBinary: boolean) => void
-type WSClientSocketCloseHandlerFunc   = (code: number, reason: Buffer) => void
+type WSCOnMessageListener = (message: WSClientMessage) => void
+type WSCOnErrorListener   = (error: WSClientError<unknown, WSClientErrorData>) => void
+type WSCOnCloseListener   = (reason?: string) => void
 
-function randomHexString(length: number): string
-{
-    const challenge = new Uint8Array(Math.ceil(length / 2))
-    randomFillSync(challenge)
-    return challenge.reduce((s, b) => s + b.toString(16).padZero(2), '')
-}
+type WSCEventName = 'message' | 'close' | 'error'
+
+type WSCEventListener<T extends WSCEventName> = T extends 'message' ? WSCOnMessageListener
+    : T extends 'close' ? WSCOnCloseListener
+    : T extends 'error' ? WSCOnErrorListener
+    : never
 
 export class WSClient<T extends TAccess | undefined = TAccess | undefined> extends EventEmitter
 {
-    private static clientUidCounter     = 0
-    private static clients: WSClientMap = {}
+    /******************************************************************************/
+    /*                                  Statics                                   */
+    /******************************************************************************/
+
+    private static clientUidCounter                            = 0
+    private static clients: { [_: WSClient['uid']]: WSClient } = {}
 
     private static isClientAuthorized<T extends TAccess | undefined>(client: WSClient, cond: T extends undefined ? true : false): client is WSClient<T>
     {
@@ -203,6 +123,26 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
         return client
     }
 
+
+    /******************************************************************************/
+    /*                            Class Implementation                            */
+    /******************************************************************************/
+
+    public set onmessage(listener: WSCEventListener<'message'>)
+    {
+        this.addListener('message', listener)
+    }
+
+    public set onerror(listener: WSCEventListener<'error'>)
+    {
+        this.addListener('error', listener)
+    }
+
+    public set onclose(listener: WSCEventListener<'close'>)
+    {
+        this.addListener('close', listener)
+    }
+
     private uid:     number
     private socket:  WebSocket
     private request: IncomingMessage
@@ -212,12 +152,12 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
     private isDestroyed   = false
 
     private challengeNonce?:       string
-    private challengeInterval?:     NodeJS.Timeout
+    private challengeInterval?:    NodeJS.Timeout
     private authorizationTimeout?: NodeJS.Timeout
 
-    private socketErrorHandler?:   (error: Error) => void
-    private socketMessageHandler?: (data: RawData, isBinary: boolean) => void
-    private socketCloseHandler?:   (code: number, reason: Buffer) => void
+    private socketErrorHandler?:   WSCSocketErrorHandlerFunc
+    private socketMessageHandler?: WSCSocketMessageHandlerFunc
+    private socketCloseHandler?:   WSCSocketCloseHandlerFunc
 
     private constructor(socket: WebSocket, request: IncomingMessage, token: T)
     {
@@ -275,6 +215,8 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
             this.socket.off('close', this.socketCloseHandler!)
         }
 
+        this.emit('close', reason)
+
         if(this.socket.readyState === WebSocket.OPEN)
             this.socket.close(undefined, reason)
 
@@ -283,6 +225,11 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
 
         delete WSClient.clients[this.uid]
     }
+
+
+    /******************************************************************************/
+    /*                                  Private                                   */
+    /******************************************************************************/
 
     private initialize(): void
     {
@@ -300,27 +247,28 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
 
     private parseIncoming<M extends WSClientMessage = WSClientMessage>(data: string | RawData): M | undefined
     {
-        let parsed
         try
         {
-            parsed = JSON.parse(String(data))
+            const parsed = JSON.parse(String(data))
+            if(!(parsed.type in WSClientMessageTypes))
+            {
+                this.emit('error', new WSClientError(this, {
+                    type: 'MESSAGE_TYPE_INVALID',
+                }, undefined, 'Message type is missing or invalid.'))
+                return undefined
+            }
+            return parsed as M
         }
         catch(error)
         {
             this.emit('error', new WSClientError(this, {
                 type: 'JSON_PARSE_ERROR',
             }, error, 'Messages must be valid JSON'))
+            return undefined
         }
-        if(!(parsed.type in WSClientMessageTypes))
-        {
-            this.emit('error', new WSClientError(this, {
-                type: 'MESSAGE_TYPE_INVALID',
-            }, undefined, 'Message type is missing or invalid.'))
-        }
-        return parsed as M
     }
 
-    private createSocketErrorHandler(): WSClientSocketErrorHandlerFunc
+    private createSocketErrorHandler(): WSCSocketErrorHandlerFunc
     {
         return this.socketErrorHandler = (error: Error) =>
         {
@@ -330,7 +278,7 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
         }
     }
 
-    private createSocketMessageHandler(): WSClientSocketMessageHandlerFunc
+    private createSocketMessageHandler(): WSCSocketMessageHandlerFunc
     {
         return this.socketMessageHandler = (data: RawData, isBinary: boolean) =>
         {
@@ -404,7 +352,7 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
         }
     }
 
-    private createSocketCloseHandler(): WSClientSocketCloseHandlerFunc
+    private createSocketCloseHandler(): WSCSocketCloseHandlerFunc
     {
         return this.socketCloseHandler = (code: number, reason: Buffer) =>
         {
@@ -444,6 +392,84 @@ export class WSClient<T extends TAccess | undefined = TAccess | undefined> exten
             })
             log.silly(`Client#${this.uid} new challenge: ${this.challengeNonce}`)
         }, WSCLIENT_PING_INTERVAL)
+    }
+
+
+    /******************************************************************************/
+    /*                           EventEmitter overrides                           */
+    /******************************************************************************/
+
+    public addListener<E extends WSCEventName>(eventName: E, listener: WSCEventListener<E>): this
+    {
+        super.addListener(eventName, listener)
+        return this
+    }
+
+    public on<E extends WSCEventName>(eventName: E, listener: WSCEventListener<E>): this
+    {
+        super.on(eventName, listener)
+        return this
+    }
+
+    public once<E extends WSCEventName>(eventName: E, listener: WSCEventListener<E>): this
+    {
+        super.once(eventName, listener)
+        return this
+    }
+
+    public removeListener<E extends WSCEventName>(eventName: E, listener: WSCEventListener<E>): this
+    {
+        super.removeListener(eventName, listener)
+        return this
+    }
+
+    public off<E extends WSCEventName>(eventName: E, listener: WSCEventListener<E>): this
+    {
+        super.off(eventName, listener)
+        return this
+    }
+
+    public removeAllListeners(event?: WSCEventName): this
+    {
+        super.removeAllListeners(event)
+        return this
+    }
+
+    public listeners<E extends WSCEventName>(eventName: E): WSCEventListener<E>[]
+    {
+        return super.listeners(eventName) as WSCEventListener<E>[]
+    }
+
+    public rawListeners<E extends WSCEventName>(eventName: E): WSCEventListener<E>[]
+    {
+        return super.rawListeners(eventName) as WSCEventListener<E>[]
+    }
+
+    public emit<E extends WSCEventName>(eventName: E, ...data: Parameters<WSCEventListener<E>>): boolean
+    {
+        return super.emit(eventName, ...data)
+    }
+
+    public listenerCount<E extends WSCEventName>(eventName: E, listener?: WSCEventListener<E>): number
+    {
+        return super.listenerCount(eventName, listener)
+    }
+
+    public prependListener<E extends WSCEventName>(eventName: E, listener: WSCEventListener<E>): this
+    {
+        super.prependListener(eventName, listener)
+        return this
+    }
+
+    public prependOnceListener<E extends WSCEventName>(eventName: E, listener: WSCEventListener<E>): this
+    {
+        super.prependOnceListener(eventName, listener)
+        return this
+    }
+
+    public eventNames(): Array<WSCEventName>
+    {
+        return super.eventNames() as Array<WSCEventName>
     }
 }
 

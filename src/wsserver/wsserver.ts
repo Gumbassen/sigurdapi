@@ -2,9 +2,10 @@
 
 import { WebSocketServer, ServerOptions } from 'ws'
 import log from '../utils/logger'
-import { WSClient, WSClientActionMessage } from './WSClient'
+import { WSClient } from './WSClient'
 import { TokenError } from '../utils/token'
 import { RequestHandler } from 'express'
+import { WSClientActionMessage } from './WSClientMessages'
 
 
 let wsserver: WebSocketServer | undefined
@@ -18,17 +19,19 @@ export function initialize(options?: ServerOptions): Promise<WebSocketServer>
             wsserver!.on('connection', (socket, request) =>
             {
                 log.verbose(`New connection! ${request.socket.remoteAddress}`)
-                try
+                WSClient.createClient(socket, request).then(client =>
                 {
-                    WSClient.createClient(socket, request)
-                }
-                catch(error)
+                    client.on('error', error =>
+                    {
+                        log.error('WSClient error:', error)
+                    })
+                }).catch(error =>
                 {
                     if(!(error instanceof TokenError))
                         throw error
     
                     log.error('Failed to create client: ', error)
-                }
+                })
             })
 
             resolve(wsserver!)

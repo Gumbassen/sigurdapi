@@ -1,6 +1,6 @@
 import { Response } from 'express'
 import log from './logger'
-import { WSClientActionMessage, WSClientMessageTypes } from '../wsserver/WSClient'
+import { WSClientActionMessage, WSClientMessageTypes } from '../wsserver/WSClientMessages'
 
 export function unauthorized(response: Response, message?: string): void
 {
