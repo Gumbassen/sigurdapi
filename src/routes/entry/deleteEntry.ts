@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express'
 import { error, wsbroadcast } from '../../utils/common'
-import { fetchTimeEntries } from '../../utils/fetchfunctions'
+import { fetchTimeEntry } from '../../utils/fetchfunctions'
 import { sql } from '../../utils/database'
 import log from '../../utils/logger'
 
@@ -15,10 +15,8 @@ export default function(router: Router)
         if(Number.isNaN(entryId))
             return error(res, 400, 'Invalid URL')
 
-        const entry = (await fetchTimeEntries(companyId, [{ field: 'Id', value: [entryId] }])).get(entryId)
-
-        if(typeof entry === 'undefined')
-            return error(res, 404, 'Time entry not found')
+        const entry = await fetchTimeEntry(companyId, entryId, false)
+        if(!entry) return error(res, 404, 'Time entry not found')
 
         const result = await sql`
             DELETE FROM

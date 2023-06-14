@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import log from '../../utils/logger'
 import { error, wsbroadcast } from '../../utils/common'
-import { fetchTimeEntries } from '../../utils/fetchfunctions'
+import { fetchTimeEntry } from '../../utils/fetchfunctions'
 import isValidKeyOf from '../../utils/isvalidkeyof'
 import { escape, sql, unsafe } from '../../utils/database'
 
@@ -34,8 +34,8 @@ export default function(router: Router)
             return error(res, 400, 'Invalid URL')
 
 
-        const entry = (await fetchTimeEntries(companyId, [{ field: 'Id', value: [entryId] }])).get(entryId)
-        if(typeof entry === 'undefined')
+        const entry = await fetchTimeEntry(companyId, entryId, false)
+        if(!entry)
         {
             log.warn(`No entry with id=${entryId}`)
             return error(res, 404, 'Entry not found')
@@ -200,7 +200,7 @@ export default function(router: Router)
                 AND te.Id = ${entryId}
             LIMIT 1`
 
-        const fetched = (await fetchTimeEntries(companyId, [{ field: 'Id', value: [entryId] }])).get(entryId)
+        const fetched = await fetchTimeEntry(companyId, entryId)
         wsbroadcast(res, companyId, 'updated', 'TimeEntry', fetched)
         res.send(fetched)
     })

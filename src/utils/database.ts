@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import mysql, { Connection, ConnectionConfig } from 'mysql'
 import { Response, NextFunction, RequestHandler } from 'express'
-import log from './logger'
+import { getNamedLogger } from './logger'
 import { error } from './common'
+
+const log = getNamedLogger('MYSQL')
 
 const allowed: (keyof ConnectionConfig)[] = [
     'host',
@@ -80,11 +82,11 @@ function initialize(): Promise<unknown[]>
         {
             if(err)
             {
-                reject(`[MYSQL] Connection "${name}" failed (#${err.errno} ${err.code}): ${err.sqlMessage}`)
+                reject(`Connection "${name}" failed (#${err.errno} ${err.code}): ${err.sqlMessage}`)
                 return
             }
 
-            log.info(`⚡ [MYSQL] Connected "${name}"!`)
+            log.info(`Connected "${name}"!`)
             resolve(undefined)
         })
     })))
@@ -195,7 +197,7 @@ function runQuery<T = any>(connection: Connection, { sql, values }: PreparedQuer
             {
                 if(error)
                 {
-                    const message = `[MYSQL] Query failed (#${error.errno} ${error.code}): ${error.sqlMessage}`
+                    const message = `Query failed (#${error.errno} ${error.code}): ${error.sqlMessage}`
                     log.error(`${message}\nSQL: ${error.sql}`)
                     reject(error)
                     return

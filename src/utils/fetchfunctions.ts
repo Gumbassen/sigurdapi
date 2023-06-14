@@ -275,7 +275,19 @@ export async function fetchTimeEntries(companyId: number, options: FetchTimeEntr
         }
     }
 
-    return new Map(Object.entries(entries)) as unknown as Map<number, ApiDataTypes.Objects.FetchedTimeEntry>
+    return new Map(Object.values(entries).map(entry => [ entry.Id, entry ])) as Map<number, ApiDataTypes.Objects.FetchedTimeEntry>
+}
+
+export async function fetchTimeEntry(companyId: number, entryId: number): Promise<ApiDataTypes.Objects.FetchedTimeEntry>
+export async function fetchTimeEntry(companyId: number, entryId: number, throwOnNoResult: false): Promise<ApiDataTypes.Objects.FetchedTimeEntry | undefined>
+export async function fetchTimeEntry(companyId: number, entryId: number, throwOnNoResult = true): Promise<ApiDataTypes.Objects.FetchedTimeEntry | undefined>
+{
+    const entries = await fetchTimeEntries(companyId, [{ field: 'Id', value: [entryId] }])
+
+    if(!entries.has(entryId) && throwOnNoResult)
+        throw new SQLNoResultError(`[CID=${companyId}] Time entry Id="${entryId}" not found`)
+
+    return entries.get(entryId)
 }
 
 export interface FetchUsersNumberOption {
