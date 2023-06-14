@@ -234,9 +234,51 @@ export function nullableEpoch(timestamp: number | null | undefined): Date | null
 
     const date = new Date(timestamp)
 
-    if(date.getFullYear() > 2200 || date.getFullYear() <= 1970)
-        log.warn(`Got a date thats probably wrong: ${timestamp} = ${date.toISOString()}`)
+    const badDatePast   = date.getFullYear() <= 1971
+    const badDateFuture = date.getFullYear() >= 2100
+    if(badDatePast || badDateFuture)
+    {
+        log.warn(`Got a date thats probably wrong: ${timestamp} = ${date.toISOString()}  Trying again with either *1000 or /1000`)
+
+        if(badDatePast)
+            return nullableEpoch(timestamp * 1000)
+
+        if(badDateFuture)
+            return nullableEpoch(timestamp / 1000)
+    }
         
+    return date
+}
+
+export function requiredEpoch(timestamp: number | null | undefined, allowZero = false): Date
+{
+    if(timestamp == null || Number.isNaN(timestamp) || !Number.isInteger(timestamp))
+        throw new Error('Føj for den... Dit timestamp er ikke et gyldigt heltal...')
+
+    if(timestamp === 0)
+    {
+        if(allowZero) return new Date(0)
+        throw new Error('Ergh... This timestamp is zero... I dont like that. Check your request data for errors.')
+    }
+
+    if(timestamp < 0)
+        throw new Error('I have decreed that timestamps SHALL be positive numbers only! Check your request data for errors.')
+
+    const date = new Date(timestamp)
+
+    const badDatePast   = date.getFullYear() <= 1971
+    const badDateFuture = date.getFullYear() >= 2100
+    if(badDatePast || badDateFuture)
+    {
+        log.warn(`Got a date thats probably wrong: ${timestamp} = ${date.toISOString()}  Trying again with either *1000 or /1000`)
+
+        if(badDatePast)
+            return requiredEpoch(timestamp * 1000)
+
+        if(badDateFuture)
+            return requiredEpoch(timestamp / 1000)
+    }
+
     return date
 }
 

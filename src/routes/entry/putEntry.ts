@@ -184,6 +184,11 @@ export default function(router: Router)
                         updateSet.push(/*SQL*/`te.${field} = ${escape(updatedEntry[field])}`)
                     }
                     break
+                    
+                case 'Start':
+                case 'End':
+                    updateSet.push(/*SQL*/`te.${field} = FROM_UNIXTIME(${escape(updatedEntry[field])})`)
+                    break
             }
         }
 
