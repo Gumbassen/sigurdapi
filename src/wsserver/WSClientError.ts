@@ -38,7 +38,7 @@ export class WSClientError<T, D extends WSClientErrorData> extends Error
 
     public constructor(client: WSClient, data: D, previous?: T, message?: string)
     {
-        super(`WebSocket Client#${client.getUid()} error from ${client.getRemoteAddress()}: ${message}`)
+        super(`WebSocket Client#${client?.getUid?.()} error from ${client?.getRemoteAddress?.()}: ${message}`)
         this.data     = data
         this.previous = previous
     }
