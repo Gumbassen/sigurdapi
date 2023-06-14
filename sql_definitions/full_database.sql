@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 29, 2023 at 09:07 AM
+-- Generation Time: Jun 14, 2023 at 12:40 PM
 -- Server version: 10.4.10-MariaDB
 -- PHP Version: 7.4.33
 
@@ -306,7 +306,7 @@ ALTER TABLE `timetags`
 --
 ALTER TABLE `timetag_rules`
   ADD PRIMARY KEY (`Id`),
-  ADD UNIQUE KEY `Name` (`Name`,`CompanyId`) USING HASH,
+  ADD UNIQUE KEY `Name` (`Name`,`CompanyId`,`TimeTagId`) USING HASH,
   ADD KEY `CompanyId` (`CompanyId`),
   ADD KEY `TimeTagId` (`TimeTagId`);
 
@@ -365,7 +365,8 @@ ALTER TABLE `user_role_permissions`
 -- Indexes for table `x_location_leaders`
 --
 ALTER TABLE `x_location_leaders`
-  ADD PRIMARY KEY (`LocationId`,`UserId`);
+  ADD PRIMARY KEY (`LocationId`,`UserId`),
+  ADD KEY `x_location_leaders_ibfk_2` (`UserId`);
 
 --
 -- Indexes for table `x_timetag_rule_weekdays`
@@ -377,19 +378,22 @@ ALTER TABLE `x_timetag_rule_weekdays`
 -- Indexes for table `x_time_entry_type_collection_timetags`
 --
 ALTER TABLE `x_time_entry_type_collection_timetags`
-  ADD PRIMARY KEY (`TimeEntryTypeCollectionId`,`TimeTagId`) USING BTREE;
+  ADD PRIMARY KEY (`TimeEntryTypeCollectionId`,`TimeTagId`) USING BTREE,
+  ADD KEY `x_time_entry_type_collection_timetags_ibfk_2` (`TimeTagId`);
 
 --
 -- Indexes for table `x_user_locations`
 --
 ALTER TABLE `x_user_locations`
-  ADD PRIMARY KEY (`UserId`,`LocationId`);
+  ADD PRIMARY KEY (`UserId`,`LocationId`),
+  ADD KEY `x_user_locations_ibfk_2` (`LocationId`);
 
 --
 -- Indexes for table `x_user_role_permissions`
 --
 ALTER TABLE `x_user_role_permissions`
-  ADD PRIMARY KEY (`UserRoleId`,`UserRolePermissionId`);
+  ADD PRIMARY KEY (`UserRoleId`,`UserRolePermissionId`),
+  ADD KEY `x_user_role_permissions_ibfk_2` (`UserRolePermissionId`);
 
 --
 -- AUTO_INCREMENT for dumped tables
