@@ -13,7 +13,7 @@ Det skal lige siges at, hvis din klient _kan_ bruge headere i din connection req
 Ellers skal du sende en besked når forbindelsen er åbnet med dette indhold:
 ```JSON
 {
-  "type":  "action",
+  "type":  "authorize",
   "token": "[[DIN TOKEN]]",
 }
 ```
