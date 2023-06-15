@@ -20,12 +20,12 @@ export default function(router: Router)
             'Start',
             'End',
             'LocationId',
+            'Status',
         ]
 
         const optionalProps: (keyof ApiTimeEntry)[] = [
             'GroupingId',
             'TimeEntryTypeId',
-            'Status',
         ]
 
         const partialEntry: Partial<ApiTimeEntry> = {
