@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { error, wsbroadcast } from '../../utils/common'
-import { ONE_DAY_SECONDS } from '../../utils/timedefinitions'
-import { ETimetagWeekday } from '../../utils/timetagweekdays'
+import { ONE_DAY_SECONDS } from '../../utils/helpers/timedefinitions'
+import { ETimetagWeekday } from '../../enums/timetagweekdays'
 import { escape, sql, unsafe } from '../../utils/database'
 import { fetchFullTimetag } from '../../utils/fetchfunctions'
 

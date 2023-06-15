@@ -1,4 +1,4 @@
-import { HTTPMethod } from './HTTPMethod'
+import { HTTPMethod } from '../../enums/HTTPMethod'
 
 export enum ApiRoutePath {
     auth_authenticate                       = '/auth/authenticate',

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import mysql, { Connection, ConnectionConfig } from 'mysql'
 import { Response, NextFunction, RequestHandler } from 'express'
-import { getNamedLogger } from './logger'
+import { getNamedLogger } from './Logger'
 import { error } from './common'
 
 const log = getNamedLogger('MYSQL')

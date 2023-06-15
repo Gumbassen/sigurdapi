@@ -77,7 +77,7 @@ declare namespace ApiDataTypes {
             /** Counted in seconds passed since midnight */
             ToTime:    number
             Amount:    number
-            Weekdays:  import('../src/utils/timetagweekdays').ETimetagWeekday[]
+            Weekdays:  import('../src/enums/timetagweekdays').ETimetagWeekday[]
         }
 
         interface FullTimetag extends Timetag {

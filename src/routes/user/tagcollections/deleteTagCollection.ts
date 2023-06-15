@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express'
 import { error, wsbroadcast } from '../../../utils/common'
 import { fetchTimeEntryTypeCollections } from '../../../utils/fetchfunctions'
 import { sql } from '../../../utils/database'
-import log from '../../../utils/logger'
+import log from '../../../utils/Logger'
 
 export default function(router: Router)
 {

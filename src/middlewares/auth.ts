@@ -1,15 +1,16 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { NextFunction, Request, RequestHandler, Response } from 'express'
-import Token, { AccessToken, TokenExpiredError, TokenInvalidError, TokenMissingError } from '../utils/token'
-import log from '../utils/logger'
-import { EUserRolePermission } from '../utils/userpermissions'
+import Token from '../utils/Token/Token'
+import log from '../utils/Logger'
+import { EUserRolePermission } from '../enums/userpermissions'
 import { pathToRegexp } from 'path-to-regexp'
 import { error } from '../utils/common'
-import { ApiRoutePath } from '../utils/ApiRoutes'
-import { HTTPMethod } from '../utils/HTTPMethod'
+import { ApiRoutePath } from '../utils/helpers/ApiRoutes'
+import { HTTPMethod } from '../enums/HTTPMethod'
+import { TokenExpiredError, TokenInvalidError, TokenMissingError } from '../utils/Token/TokenErrors'
 
 export type InsecureFilterFunc = (request: Request) => boolean
-export type AccessFilterFunc   = (request: Request, token: Token<AccessToken>) => Nullable<boolean>
+export type AccessFilterFunc   = (request: Request, token: Token<TokenType.Access>) => Nullable<boolean>
 
 export interface AccessFilterFuncOption {
     path:   ApiRoutePath
@@ -102,7 +103,7 @@ export default function(options: AuthMiddlewareOptions): RequestHandler
         if(!token.verify())
             return options.onInvalidHandler!(req, res, next)
 
-        if(!token.isOfType<AccessToken>('access'))
+        if(!token.isOfType<TokenType.Access>('access'))
             return error(res, 401, 'Refresh tokens cannot be used as access tokens (refresh tokens should only be used to generate new access tokens).')
 
         if(!token.getPayloadField('prm').includes(EUserRolePermission.superadmin))

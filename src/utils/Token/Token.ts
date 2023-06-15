@@ -2,9 +2,10 @@
 
 import { Request } from 'express'
 import { createHash, createHmac, randomUUID } from 'crypto'
-import log from './logger'
-import { EUserRolePermission } from './userpermissions'
+import log from '../Logger'
 import fs from 'fs'
+import { TokenInvalidError, TokenMissingError, TokenUnsupportedAlgorithmError } from './TokenErrors'
+import { TokenSegments } from './TokenSegments'
 
 if(typeof process.env.JWT_SECRET !== 'string')
     throw new Error('There is no "process.env.JWT_SECRET"...')
@@ -12,113 +13,6 @@ if(typeof process.env.JWT_SECRET !== 'string')
 const        SECRET         = process.env.JWT_SECRET
 export const ALLOW_ALG_NONE = process.env.JWT_ALLOW_ALG_NONE === '1'
 
-
-// Custom errors
-export abstract class TokenError extends Error
-{
-    constructor(message?: string)
-    {
-        super(message)
-    }
-}
-
-export class TokenInvalidError extends TokenError
-{
-    constructor(message?: string)
-    {
-        log.info(`Invalid token! ${message}`)
-        super(message)
-    }
-}
-
-export class TokenMissingError extends TokenError
-{
-    constructor(message?: string)
-    {
-        log.info('Token is missing!')
-        super(message)
-    }
-}
-
-export class TokenExpiredError extends TokenError
-{
-    constructor(message?: string)
-    {
-        super(message)
-    }
-}
-
-export class TokenUnsupportedAlgorithmError extends TokenError
-{
-    constructor(algorithm: string)
-    {
-        super(`Unsupported token algorithm "${algorithm}"!`)
-    }
-}
-
-// Skeleton interfaces for tokens and their contents
-export interface TokenHeader
-{
-    /** Token type: usually "JWT" or "JWE" */
-    typ: 'JWT' | 'JWE'
-
-    /** Signing algorithm */
-    alg: 'none' | 'HS256' | 'RS256'
-
-    /** Issuer: string or url */
-    iss: string
-
-    /** Expiration time: a unix epoch which if passed the token must no longer be accepted */
-    exp: number
-
-    /** Issued at: a unix epoch of when the token was issued */
-    ist: number
-
-    /** JWT ID: a practically unique ID for this specific token */
-    jti: string
-
-    /** Token version: The version of token.ts that created the token */
-    ver: string
-}
-
-interface BaseTokenType {
-    /** Token type: Determines whether this is an access or refresh token */
-    typ: string
-
-    /** User ID: The current users ID */
-    uid: number
-
-    /** Company ID: The current users company ID */
-    cid: number
-}
-
-export interface AccessToken extends BaseTokenType {
-    typ: 'access'
-
-    /** UserRole ID: The current users UserRole ID */
-    rid: number
-
-    /** FullName: The users full name */
-    fln: string
-
-    /** HiredDate: The users first day of employment (if set) */
-    hdt: Nullable<number>
-
-    /** FiredDate: The users last day of employment (if set) */
-    fdt: Nullable<number>
-
-    /** UserRole Permission IDs: All of the users permissions */
-    prm: EUserRolePermission[]
-
-    /** Location IDs: Locations that the user is part of */
-    loc: ApiDataTypes.Objects.Location['Id'][]
-}
-
-export interface RefreshToken extends BaseTokenType {
-    typ: 'refresh'
-}
-
-export type TokenType = AccessToken | RefreshToken
 
 // Contains this files md5 hash, which is used to version-control the tokens.
 // If this file has been changed, then the token will probably be invalid
@@ -143,9 +37,9 @@ export function getTokenVersionId(): string
 }
 
 // The actual token class
-export default class Token<T extends BaseTokenType = TokenType>
+export default class Token<T extends TokenType = TokenType.Any>
 {
-    public static fromAuthHeader<T extends BaseTokenType = TokenType>(value: string): Token<T>
+    public static fromAuthHeader<T extends TokenType = TokenType.Any>(value: string): Token<T>
     {
         if(value.startsWith('Bearer '))
             value = value.substring(7)
@@ -162,7 +56,7 @@ export default class Token<T extends BaseTokenType = TokenType>
         return token
     }
 
-    public static fromRequest<T extends BaseTokenType = TokenType>(request: Request): Token<T>
+    public static fromRequest<T extends TokenType = TokenType.Any>(request: Request): Token<T>
     {
         const value = request.header('Authorization')
         if(typeof value !== 'string')
@@ -171,7 +65,7 @@ export default class Token<T extends BaseTokenType = TokenType>
         return this.fromAuthHeader<T>(value)
     }
 
-    public static fromPayload<T extends BaseTokenType = TokenType>(payload: T, ttl?: number): Token<T>
+    public static fromPayload<T extends TokenType = TokenType.Any>(payload: T, ttl?: number): Token<T>
     {
         const now = Date.now()
 
@@ -193,7 +87,7 @@ export default class Token<T extends BaseTokenType = TokenType>
         return token
     }
 
-    private header!: TokenHeader
+    private header!:  TokenSegments.Header
     private payload!: T
 
     private verified = false
@@ -260,7 +154,7 @@ export default class Token<T extends BaseTokenType = TokenType>
     /**
      * Checks if the token header contains a given field.
      */
-    public hasHeaderField(field: keyof TokenHeader): boolean
+    public hasHeaderField(field: keyof TokenSegments.Header): boolean
     {
         return typeof this.header[field] !== 'undefined'
     }
@@ -268,7 +162,7 @@ export default class Token<T extends BaseTokenType = TokenType>
     /**
      * Gets the value of a specific header field.
      */
-    public getHeaderField<K extends keyof TokenHeader>(field: K): TokenHeader[K]
+    public getHeaderField<K extends keyof TokenSegments.Header>(field: K): TokenSegments.Header[K]
     {
         if(!this.hasHeaderField(field))
             throw new Error(`Token header does not contain the field "${String(field)}"`)
@@ -276,7 +170,7 @@ export default class Token<T extends BaseTokenType = TokenType>
         return this.header[field]
     }
 
-    public getHeaderFieldOrUndefined<K extends keyof TokenHeader>(field: K): TokenHeader[K] | undefined
+    public getHeaderFieldOrUndefined<K extends keyof TokenSegments.Header>(field: K): TokenSegments.Header[K] | undefined
     {
         if(!this.hasHeaderField(field))
             return undefined
@@ -289,7 +183,7 @@ export default class Token<T extends BaseTokenType = TokenType>
      * 
      * Resets the token signature.
      */
-    public setHeaderField<K extends keyof TokenHeader>(field: K, value: TokenHeader[K]): void
+    public setHeaderField<K extends keyof TokenSegments.Header>(field: K, value: TokenSegments.Header[K]): void
     {
         this.header[field] = value
         this.unsign()
@@ -372,13 +266,13 @@ export default class Token<T extends BaseTokenType = TokenType>
         return Buffer.from(JSON.stringify(this.payload)).toString('base64url')
     }
 
-    private static parseHeader(header: string): TokenHeader
+    private static parseHeader(header: string): TokenSegments.Header
     {
         // TODO: Improve this
         return JSON.parse(Buffer.from(header, 'base64url').toString())
     }
 
-    private static parsePayload<T extends BaseTokenType = TokenType>(payload: string): T
+    private static parsePayload<T extends TokenType = TokenType.Any>(payload: string): T
     {
         // TODO: Improve this
         return JSON.parse(Buffer.from(payload, 'base64url').toString())

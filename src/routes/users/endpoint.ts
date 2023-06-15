@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { error } from '../../utils/common'
 import { FetchUsersOption, FetchUsersDateOption, FetchUsersNumberOption, fetchUsers } from '../../utils/fetchfunctions'
-import { digitStringRx, pipeDelimitedNumbersRx } from '../../utils/regexes'
+import { digitStringRx, pipeDelimitedNumbersRx } from '../../utils/helpers/regexes'
 
 export default function(router: Router)
 {

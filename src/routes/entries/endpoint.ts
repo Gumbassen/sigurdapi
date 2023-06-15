@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
-import log from './../../utils/logger'
+import log from '../../utils/Logger'
 import { error } from '../../utils/common'
-import { digitStringRx, pipeDelimitedAlphanumRx, pipeDelimitedNumbersRx } from '../../utils/regexes'
+import { digitStringRx, pipeDelimitedAlphanumRx, pipeDelimitedNumbersRx } from '../../utils/helpers/regexes'
 import {
     EFetchTimeEntriesDataListOptions,
     FetchTimeEntriesDateOption,

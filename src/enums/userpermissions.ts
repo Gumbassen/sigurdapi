@@ -1,6 +1,6 @@
-import { escape, sql, unsafe } from './database'
-import log from './logger'
-import mapiterator from './mapiterator'
+import { escape, sql, unsafe } from '../utils/database'
+import log from '../utils/Logger'
+import mapiterator from '../utils/helpers/mapiterator'
 
 export enum EUserRolePermission {
     'superadmin'              = 1,

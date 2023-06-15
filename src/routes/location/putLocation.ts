@@ -1,9 +1,9 @@
 import { Router, Request, Response } from 'express'
 import { error, wsbroadcast } from '../../utils/common'
 import { fetchLocation } from '../../utils/fetchfunctions'
-import isValidKeyOf from '../../utils/isvalidkeyof'
+import isValidKeyOf from '../../utils/helpers/isvalidkeyof'
 import { escape, sql, unsafe } from '../../utils/database'
-import log from '../../utils/logger'
+import log from '../../utils/Logger'
 
 type ApiLocation = ApiDataTypes.Objects.Location
 

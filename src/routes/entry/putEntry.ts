@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express'
-import log from '../../utils/logger'
+import log from '../../utils/Logger'
 import { error, wsbroadcast } from '../../utils/common'
 import { fetchTimeEntry } from '../../utils/fetchfunctions'
-import isValidKeyOf from '../../utils/isvalidkeyof'
+import isValidKeyOf from '../../utils/helpers/isvalidkeyof'
 import { escape, sql, unsafe } from '../../utils/database'
 
 type ApiTimeEntry = ApiDataTypes.Objects.TimeEntry

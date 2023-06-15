@@ -2,12 +2,13 @@
 
 import { WebSocket, RawData } from 'ws'
 import EventEmitter from 'events'
-import Token, { AccessToken, TokenInvalidError } from '../utils/token'
+import Token from '../utils/Token/Token'
 import { IncomingMessage } from 'http'
-import { getNamedLogger } from '../utils/logger'
+import { getNamedLogger } from '../utils/Logger'
 import { WSClientError, WSClientErrorData } from './WSClientError'
 import { WSClientMessage, WSClientMessageTypes } from './WSClientMessages'
-import randomHexString from '../utils/randomHexString'
+import randomHexString from '../utils/helpers/randomHexString'
+import { TokenInvalidError } from '../utils/Token/TokenErrors'
 
 const log = getNamedLogger('WSCLIENT')
 
@@ -15,7 +16,7 @@ export const WSCLIENT_AUTHORIZATION_TIMEOUT = 10_000
 export const WSCLIENT_PING_INTERVAL         = 30_000
 export const WSCLIENT_PING_TIMEOUT          = 10_000
 
-declare type TAccess              = Token<AccessToken>
+declare type TAccess              = Token<TokenType.Access>
 declare type AuthorizedWSClient   = WSClient<TAccess>
 declare type UnauthorizedWSClient = WSClient<undefined>
 
@@ -29,9 +30,10 @@ type WSCOnCloseListener   = (reason?: string) => void
 
 type WSCEventName = 'message' | 'close' | 'error'
 
-type WSCEventListener<T extends WSCEventName> = T extends 'message' ? WSCOnMessageListener
-    : T extends 'close' ? WSCOnCloseListener
-    : T extends 'error' ? WSCOnErrorListener
+type WSCEventListener<T extends WSCEventName>
+    = T extends 'message' ? WSCOnMessageListener
+    : T extends 'close'   ? WSCOnCloseListener
+    : T extends 'error'   ? WSCOnErrorListener
     : never
 
 export class WSClient<T extends TAccess | undefined = TAccess | undefined> extends EventEmitter

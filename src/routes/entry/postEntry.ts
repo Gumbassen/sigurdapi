@@ -1,7 +1,7 @@
 import { Request, Response, Router } from 'express'
 import { error, wsbroadcast } from '../../utils/common'
 import { escape, sql, unsafe } from '../../utils/database'
-import log from '../../utils/logger'
+import log from '../../utils/Logger'
 
 type ApiTimeEntry = ApiDataTypes.Objects.TimeEntry
 

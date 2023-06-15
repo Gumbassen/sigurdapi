@@ -1,7 +1,7 @@
 
 
 // Environment setup
-import './utils/extensions'
+import './utils/Extensions'
 import express from 'express'
 import dotenv from 'dotenv'
 import fs from 'fs'
@@ -14,19 +14,19 @@ if(!fs.existsSync('./.env'))
     dotenv.config({ path: './.env.example' })
 }
 
-import log, { getNamedLogger } from './utils/logger'
+import log, { getNamedLogger } from './utils/Logger'
 import swaggerUi from 'swagger-ui-express'
 import swaggerDefinitions from './static/openapi.json'
-import fsrecursivesearch from './utils/fsrecursivesearch'
+import fsrecursivesearch from './utils/helpers/fsrecursivesearch'
 import authmw from './middlewares/auth'
-import mapiterator from './utils/mapiterator'
+import mapiterator from './utils/helpers/mapiterator'
 import database from './utils/database'
-import userpermissions from './utils/userpermissions'
+import userpermissions from './enums/userpermissions'
 import nocache from 'nocache'
 import requestlog from './middlewares/requestlog'
 import notfound404 from './middlewares/notfound404'
 import wsserver from './wsserver/wsserver'
-import asyncwait from './utils/asyncwait'
+import asyncwait from './utils/helpers/asyncwait'
 
 if(usingDotenvExample)
 {

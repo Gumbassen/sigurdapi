@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express'
 import { error, wsbroadcast } from '../../utils/common'
 import { SQLNoResultError, fetchUserRole } from '../../utils/fetchfunctions'
-import log from '../../utils/logger'
-import isValidKeyOf from '../../utils/isvalidkeyof'
+import log from '../../utils/Logger'
+import isValidKeyOf from '../../utils/helpers/isvalidkeyof'
 import { escape, sql, unsafe } from '../../utils/database'
 
 type ApiUserRole = ApiDataTypes.Objects.UserRole

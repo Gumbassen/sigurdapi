@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { error, wsbroadcast } from '../../utils/common'
 import { escape, nullableEpoch, sql, unsafe } from '../../utils/database'
-import log from '../../utils/logger'
+import log from '../../utils/Logger'
 
 type ApiUser = ApiDataTypes.Objects.User
 

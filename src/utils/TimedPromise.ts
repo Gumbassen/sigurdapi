@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-
 type PromiseResolver<T> = (value: T | PromiseLike<T>) => void
 type PromiseRejector    = (reason?: any) => void
 type PromiseExecutor<T> = (resolve: PromiseResolver<T>, reject: PromiseRejector) => void
@@ -43,7 +42,7 @@ export class TimedPromise<T> implements Promise<T>
      * Creates a new resolved TimedPromise.
      * @returns A resolved TimedPromise.
      */
-    public static resolve(): TimedPromise<void>;
+    public static resolve(): TimedPromise<void>
 
     /**
      * Creates a new resolved TimedPromise for the provided value.
@@ -51,14 +50,14 @@ export class TimedPromise<T> implements Promise<T>
      * @returns A TimedPromise whose internal state matches the provided promise.
      */
 
-    public static resolve<T>(value: T): TimedPromise<Awaited<T>>;
+    public static resolve<T>(value: T): TimedPromise<Awaited<T>>
 
     /**
      * Creates a new resolved TimedPromise for the provided value.
      * @param value A promise.
      * @returns A TimedPromise whose internal state matches the provided promise.
      */
-    public static resolve<T>(value: T | PromiseLike<T>): TimedPromise<Awaited<T>>;
+    public static resolve<T>(value: T | PromiseLike<T>): TimedPromise<Awaited<T>>
 
     public static resolve<T>(value?: T | PromiseLike<T>): TimedPromise<Awaited<T>>
     {

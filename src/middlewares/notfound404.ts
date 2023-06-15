@@ -1,6 +1,6 @@
 import { RequestHandler } from 'express'
 import { error } from '../utils/common'
-import log from '../utils/logger'
+import log from '../utils/Logger'
 
 export default function(): RequestHandler
 {

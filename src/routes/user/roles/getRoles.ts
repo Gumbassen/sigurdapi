@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { error } from '../../../utils/common'
 import { SQLNoResultError, fetchUserUserRoles } from '../../../utils/fetchfunctions'
-import log from '../../../utils/logger'
+import log from '../../../utils/Logger'
 
 export default function(router: Router)
 {

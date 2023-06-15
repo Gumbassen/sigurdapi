@@ -1,5 +1,5 @@
 import fs from 'fs'
-import log from './logger'
+import log from '../Logger'
 
 export default function *fsrecursivesearch(rootPath: fs.PathLike, filter: (dirent: fs.Dirent) => boolean): Generator<string>
 {

@@ -1,9 +1,9 @@
 /* eslint-disable no-use-before-define */
 
 import { WebSocketServer, ServerOptions } from 'ws'
-import log from '../utils/logger'
+import log from '../utils/Logger'
 import { WSClient } from './WSClient'
-import { TokenError } from '../utils/token'
+import { TokenError } from '../utils/Token/TokenErrors'
 import { RequestHandler } from 'express'
 import { WSClientActionMessage } from './WSClientMessages'
 

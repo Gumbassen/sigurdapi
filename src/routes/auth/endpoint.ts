@@ -1,15 +1,10 @@
 import { Router, Request, Response } from 'express'
-import Token, {
-    RefreshToken,
-    AccessToken,
-    TokenExpiredError,
-    TokenInvalidError,
-    TokenMissingError,
-} from '../../utils/token'
-import intervalparser from '../../utils/intervalparser'
+import Token from '../../utils/Token/Token'
+import intervalparser from '../../utils/helpers/intervalparser'
 import { error, unauthorized } from '../../utils/common'
 import { SQLNoResultError, fetchFullUser, fetchLogin } from '../../utils/fetchfunctions'
-import log from '../../utils/logger'
+import log from '../../utils/Logger'
+import { TokenExpiredError, TokenInvalidError, TokenMissingError } from '../../utils/Token/TokenErrors'
 
 const ttlAccess  = intervalparser(process.env.TOKEN_TTL_ACCESS  ?? 'P30I').totalSeconds
 const ttlRefresh = intervalparser(process.env.TOKEN_TTL_REFRESH ?? 'P1M').totalSeconds
@@ -41,7 +36,7 @@ export default function(router: Router)
                 const user = await fetchFullUser(CompanyId, UserId)
 
                 const response: ApiDataTypes.Responses.AuthenticationResponse = {
-                    accessToken: Token.fromPayload<AccessToken>({
+                    accessToken: Token.fromPayload<TokenType.Access>({
                         typ: 'access',
                         uid: UserId,
                         cid: CompanyId,
@@ -52,7 +47,7 @@ export default function(router: Router)
                         prm: user.UserRole.PermissionIds,
                         loc: user.LocationIds,
                     }, ttlAccess).toTokenObject(),
-                    refreshToken: Token.fromPayload<RefreshToken>({
+                    refreshToken: Token.fromPayload<TokenType.Refresh>({
                         typ: 'refresh',
                         uid: UserId,
                         cid: CompanyId,
@@ -91,7 +86,7 @@ export default function(router: Router)
             if(!token.verify())
                 return unauthorized(res)
 
-            if(!token.isOfType<RefreshToken>('refresh'))
+            if(!token.isOfType<TokenType.Refresh>('refresh'))
                 return unauthorized(res)
 
             const userId    = token.getPayloadField('uid')
@@ -100,7 +95,7 @@ export default function(router: Router)
             const user = await fetchFullUser(companyId, userId)
 
             const response: ApiDataTypes.Responses.AuthenticationResponse = {
-                accessToken: Token.fromPayload<AccessToken>({
+                accessToken: Token.fromPayload<TokenType.Access>({
                     typ: 'access',
                     uid: token.getPayloadField('uid'),
                     cid: token.getPayloadField('cid'),

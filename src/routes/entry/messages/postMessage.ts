@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express'
-import log from '../../../utils/logger'
+import log from '../../../utils/Logger'
 import { error, wsbroadcast } from '../../../utils/common'
 import { escape, sql, sqlMulti, unsafe } from '../../../utils/database'
 
