@@ -111,6 +111,11 @@ export interface FetchTimeEntriesDateOption {
     value: Date | number
 }
 
+export interface FetchTimeEntriesStringOption {
+    field: 'Status'
+    value: string[]
+}
+
 export enum EFetchTimeEntriesDataListOptions {
     'Location' = 'Location',
     'Message'  = 'Message',
@@ -121,7 +126,7 @@ export interface FetchTimeEntriesDataListOption {
     value: EFetchTimeEntriesDataListOptions[],
 }
 
-export type FetchTimeEntriesOption = FetchTimeEntriesNumberOption | FetchTimeEntriesDateOption | FetchTimeEntriesDataListOption
+export type FetchTimeEntriesOption = FetchTimeEntriesNumberOption | FetchTimeEntriesDateOption | FetchTimeEntriesDataListOption | FetchTimeEntriesStringOption
 
 export async function fetchTimeEntries(companyId: number, options: FetchTimeEntriesOption[]): Promise<Map<number, ApiDataTypes.Objects.FetchedTimeEntry>>
 {
@@ -161,6 +166,10 @@ export async function fetchTimeEntries(companyId: number, options: FetchTimeEntr
             case 'WithData':
                 for(const value of option.value)
                     dataListOptions[value] = true
+                break
+
+            case 'Status':
+                clauses.push(/*SQL*/`te.Status = ${escape(option.value)}`)
         }
     }
     
@@ -175,6 +184,7 @@ export async function fetchTimeEntries(companyId: number, options: FetchTimeEntr
             te.GroupingId            AS GroupingId,
             te.LocationId            AS LocationId,
             te.TimeEntryTypeId       AS TimeEntryTypeId,
+            te.Status                AS Status,
             GROUP_CONCAT(tem.Id)     AS MessageIds
         FROM
             timeentries AS te
@@ -200,6 +210,7 @@ export async function fetchTimeEntries(companyId: number, options: FetchTimeEntr
             GroupingId:      row.GroupingId ?? undefined,
             LocationId:      row.LocationId,
             TimeEntryTypeId: row.TimeEntryTypeId ?? undefined,
+            Status:          row.Status ?? null,
             MessageIds:      csNumberRow(row.MessageIds ?? ''),
         }
     }

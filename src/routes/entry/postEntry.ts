@@ -4,6 +4,7 @@ import { escape, sql, unsafe } from '../../utils/database'
 import log from '../../utils/Logger'
 import permission from '../../middlewares/permission'
 import { EUserRolePermission as URP } from '../../enums/userpermissions'
+import { alphanumRx } from '../../utils/helpers/regexes'
 
 type ApiTimeEntry = ApiDataTypes.Objects.TimeEntry
 
@@ -24,6 +25,7 @@ export default function(router: Router)
         const optionalProps: (keyof ApiTimeEntry)[] = [
             'GroupingId',
             'TimeEntryTypeId',
+            'Status',
         ]
 
         const partialEntry: Partial<ApiTimeEntry> = {
@@ -40,11 +42,7 @@ export default function(router: Router)
                 return error(res, 400, `Param "${field}" is required.`)
             }
 
-            const value = Number.parseInt(req.body[field])
-
-            if(Number.isNaN(value) || value < 1)
-                return error(res, 400, `Param "${field}" is invalid.`)
-
+            const value = req.body[field]
             switch(field)
             {
                 case 'UserId':
@@ -53,6 +51,14 @@ export default function(router: Router)
                 case 'TimeEntryTypeId':
                 case 'Start':
                 case 'End':
+                    partialEntry[field] = Number.parseInt(value)
+                    if(Number.isNaN(partialEntry[field]) || partialEntry[field]! < 1)
+                        return error(res, 400, `Param "${field}" is invalid (must be a valid, positive, non-zero integer).`)
+                    break
+
+                case 'Status':
+                    if(value.length < 1 || !alphanumRx.test(value))
+                        return error(res, 400, `Param "${field}" is invalid (must be a non-empty alphanumeric string).`)
                     partialEntry[field] = value
                     break
             }
@@ -149,7 +155,8 @@ export default function(router: Router)
                     Duration        = ${entry.Duration},
                     GroupingId      = ${entry.GroupingId ?? null},
                     LocationId      = ${entry.LocationId},
-                    TimeEntryTypeId = ${entry.TimeEntryTypeId ?? null}`
+                    TimeEntryTypeId = ${entry.TimeEntryTypeId ?? null}
+                    Status          = ${entry.Status ?? null}`
             entry.Id = result.insertId
 
             log.silly(`Time entry was created:\n${JSON.stringify(entry, null, 2)}`)

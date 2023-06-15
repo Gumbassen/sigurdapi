@@ -7,6 +7,7 @@ import {
     FetchTimeEntriesDateOption,
     FetchTimeEntriesNumberOption,
     FetchTimeEntriesOption,
+    FetchTimeEntriesStringOption,
     fetchTimeEntries
 } from '../../utils/fetchfunctions'
 
@@ -78,6 +79,23 @@ export default function(router: Router)
                 return error(res, 400, `Param "${param}" is invalid`)
 
             fetchClauses.push({ field: dateOptions[param], value: parsed })
+        }
+
+        const stringOptions: { [_: string]: FetchTimeEntriesStringOption['field'] } = {
+            status: 'Status',
+        }
+
+        for(const param in stringOptions)
+        {
+            if(!(param in query))
+                continue
+
+            const value = query[param]
+
+            if(typeof value !== 'string' || !pipeDelimitedAlphanumRx.test(value))
+                return error(res, 400, `Param "${param}" should be a pipe-delimited alphanumeric string`)
+
+            fetchClauses.push({ field: stringOptions[param], value: value.split('|') })
         }
 
         if('withdata' in query)

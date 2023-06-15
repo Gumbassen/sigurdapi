@@ -6,6 +6,7 @@ import isValidKeyOf from '../../utils/helpers/isvalidkeyof'
 import { escape, sql, unsafe } from '../../utils/database'
 import permission from '../../middlewares/permission'
 import { EUserRolePermission as URP } from '../../enums/userpermissions'
+import { alphanumRx } from '../../utils/helpers/regexes'
 
 type ApiTimeEntry = ApiDataTypes.Objects.TimeEntry
 
@@ -24,6 +25,7 @@ export default function(router: Router)
             'GroupingId',
             'LocationId',
             'TimeEntryTypeId',
+            'Status',
         ]
 
         const nullableProps: (keyof ApiTimeEntry)[] = [
@@ -84,6 +86,12 @@ export default function(router: Router)
                     updatedEntry[field] = Number.parseInt(value)
                     if(Number.isNaN(value))
                         return error(res, 400, `Param "${field}" is invalid (must be an integer / unix timestamp).`)
+                    break
+
+                case 'Status':
+                    if(value.length < 1 || !alphanumRx.test(value))
+                        return error(res, 400, `Param "${field}" is invalid (must be a non-empty alphanumeric string).`)
+                    updatedEntry[field] = value
                     break
             }
         }
@@ -189,6 +197,7 @@ export default function(router: Router)
                 case 'GroupingId':
                 case 'TimeEntryTypeId':
                 case 'Duration':
+                case 'Status':
                     if(updatedEntry[field] == null)
                     {
                         if(!nullableProps.includes(field))

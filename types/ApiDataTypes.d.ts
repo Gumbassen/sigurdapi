@@ -19,6 +19,7 @@ declare namespace ApiDataTypes {
             MessageIds:       TimeEntryMessage['Id'][]
             LocationId:       Location['Id']
             TimeEntryTypeId?: TimeEntryType['Id']
+            Status:           string | null
         }
 
         interface TimeEntryMessage {
