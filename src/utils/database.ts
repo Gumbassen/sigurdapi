@@ -3,6 +3,8 @@ import mysql, { Connection, ConnectionConfig } from 'mysql'
 import { Response, NextFunction, RequestHandler } from 'express'
 import { getNamedLogger } from './Logger'
 import { error } from './common'
+import { TimedPromise } from './TimedPromise'
+import asyncwait from './helpers/asyncwait'
 
 const log = getNamedLogger('MYSQL')
 
@@ -49,9 +51,14 @@ export interface ConnectionStore {
     multi:  Connection
 }
 
+function createConnection(...configs: mysql.ConnectionConfig[]): mysql.Connection
+{
+    return mysql.createConnection(Object.assign({}, config, ...configs))
+}
+
 const connections: ConnectionStore = {
-    single: mysql.createConnection(Object.assign({}, config, { multipleStatements: false })),
-    multi:  mysql.createConnection(Object.assign({}, config, { multipleStatements: true })),
+    single: createConnection({ multipleStatements: false }),
+    multi:  createConnection({ multipleStatements: true }),
 }
 
 function middleware(): RequestHandler
@@ -73,22 +80,48 @@ function middleware(): RequestHandler
     }
 }
 
-let connectPromise: Promise<unknown[]> | null = null
-function initialize(): Promise<unknown[]>
+let connectPromise: Promise<void[]> | null = null
+function initialize(): Promise<void[]>
 {
-    connectPromise ??= Promise.all(Object.entries(connections).map(([ name, connection ]) => new Promise((resolve, reject) =>
+    const CONNECT_ATTEMPT_TIMEOUT = 5000
+
+    const createTimedPromise = (connection: mysql.Connection, timeout = CONNECT_ATTEMPT_TIMEOUT) => new TimedPromise<mysql.Connection>((resolve, reject) =>
     {
         connection.connect((err: any) =>
         {
             if(err)
-            {
-                reject(`Connection "${name}" failed (#${err.errno} ${err.code}): ${err.sqlMessage}`)
-                return
-            }
-
-            log.info(`Connected "${name}"!`)
-            resolve(undefined)
+                reject(err)
+            else
+                resolve(connection)
         })
+    }, timeout)
+
+    connectPromise ??= Promise.all(Object.keys(connections).map(key => new Promise<void>((resolve, reject) =>
+    {
+        const name = key as keyof ConnectionStore
+
+        let attempts = 3
+
+        const onResolve = (connection: mysql.Connection) =>
+        {
+            connections[name] = connection
+            log.info(`Connected "${name}"!`)
+            resolve()
+        }
+
+        const onReject = (err: any) =>
+        {
+            if(attempts-- <= 0)
+                return reject(`Connection "${name}" failed. No more attempts. Error(#${err.errno} ${err.code}): ${err.sqlMessage}`)
+
+            log.warn(`Connection "${name}" failed. ${attempts} remaining. Error(#${err.errno} ${err.code}): ${err.sqlMessage}`)
+            asyncwait(CONNECT_ATTEMPT_TIMEOUT).then(() =>
+            {
+                createTimedPromise(createConnection(connections[name].config)).then(onResolve, onReject)
+            })
+        }
+
+        createTimedPromise(connections[name]).then(onResolve, onReject)
     })))
 
     return connectPromise
