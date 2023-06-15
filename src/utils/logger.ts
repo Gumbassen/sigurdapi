@@ -4,6 +4,7 @@ import { dirname, normalize } from 'path'
 import { Logger, ILogObj } from 'tslog'
 import { ILogObjMeta, ISettings, IStackFrame } from 'tslog/dist/types/interfaces'
 import { IMeta, IMetaStatic } from 'tslog/dist/types/runtime/nodejs'
+import asyncwait from './helpers/asyncwait'
 
 
 const rootDir        = normalize(dirname(require.main!.filename) + '/..')
@@ -208,8 +209,19 @@ const log: WinstonLikeLogger = {
     /* eslint-enable brace-style */
 }
 
-process.on('uncaughtException',  exception => log.fatal('Uncaught exception:',  exception))
-process.on('unhandledRejection', rejection => log.fatal('Unhandled rejection:', rejection))
+process.on('uncaughtException', async exception =>
+{
+    log.fatal('Uncaught exception:',  exception)
+    await asyncwait(300)
+    process.exit(1)
+})
+
+process.on('unhandledRejection', async rejection =>
+{
+    log.fatal('Unhandled rejection:', rejection)
+    await asyncwait(300)
+    process.exit(1)
+})
 
 log.info(`⚡ Running in "${process.env.NODE_ENV}" mode`)
 
