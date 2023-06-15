@@ -3,12 +3,14 @@ import { error, wsbroadcast } from '../../../utils/common'
 import { ONE_DAY_SECONDS } from '../../../utils/helpers/timedefinitions'
 import { ETimetagWeekday } from '../../../enums/timetagweekdays'
 import { escape, sql, unsafe } from '../../../utils/database'
+import permission from '../../../middlewares/permission'
+import { EUserRolePermission as URP } from '../../../enums/userpermissions'
 
 type ApiTimetagRule = ApiDataTypes.Objects.TimetagRule
 
 export default function(router: Router)
 {
-    router.post('/:timeTagId/rules', async (req: Request, res: Response) =>
+    router.post('/:timeTagId/rules', permission.has(URP.manage_all_timetags), async (req: Request, res: Response) =>
     {
         const token     = res.locals.accessToken!
         const companyId = token.getPayloadField('cid')

@@ -6,6 +6,7 @@ import log from '../Logger'
 import fs from 'fs'
 import { TokenInvalidError, TokenMissingError, TokenUnsupportedAlgorithmError } from './TokenErrors'
 import { TokenSegments } from './TokenSegments'
+import { EUserRolePermission, PermissionHeirarchies } from '../../enums/userpermissions'
 
 if(typeof process.env.JWT_SECRET !== 'string')
     throw new Error('There is no "process.env.JWT_SECRET"...')
@@ -35,6 +36,8 @@ export function getTokenVersionId(): string
     log.silly(`Token version ID: ${selfHashString}`)
     return selfHashString
 }
+
+type ForAccessToken<T extends TokenType, R> = T extends TokenType.Access ? R : never
 
 // The actual token class
 export default class Token<T extends TokenType = TokenType.Any>
@@ -281,5 +284,71 @@ export default class Token<T extends TokenType = TokenType.Any>
     public isOfType<C extends TokenType>(type: C['typ']): this is Token<C>
     {
         return this.getPayloadField('typ') === type
+    }
+
+    public isSuperadmin<R = ForAccessToken<T, boolean>>(): R
+    {
+        if(!this.isOfType<TokenType.Access>('access'))
+            throw new Error('The method "isSuperadmin" can only be used on access tokens')
+
+        const perms = this.getPayloadField('prm')
+
+        return perms.includes(EUserRolePermission.superadmin) as R
+    }
+
+    private __cachedEffectivePermissions: EUserRolePermission[] | undefined
+    public getEffectivePermissions<R = ForAccessToken<T, EUserRolePermission[]>>(): R
+    {
+        if(!this.isOfType<TokenType.Access>('access'))
+            throw new Error('The method "getEffectivePermissions" can only be used on access tokens')
+
+        if(this.isSuperadmin())
+            return Object.keys(PermissionHeirarchies).map(s => Number.parseInt(s)) as R // Must be parsed to numbers as object keys are always strings
+
+        if(this.__cachedEffectivePermissions)
+            return this.__cachedEffectivePermissions as R
+
+        const perms = new Set<EUserRolePermission>()
+        for(const perm of this.getPayloadField('prm'))
+        {
+            for(const sub of PermissionHeirarchies[perm])
+                perms.add(sub)
+        }
+        return (this.__cachedEffectivePermissions = Array.from(perms.values())) as R
+    }
+
+    public hasPermission<R = ForAccessToken<T, boolean>>(perm: EUserRolePermission, useHeirarchy = true): R
+    {
+        if(!this.isOfType<TokenType.Access>('access'))
+            throw new Error('The method "hasPermission" can only be used on access tokens')
+
+        if(this.isSuperadmin())
+            return true as R
+
+        const perms = this.getPayloadField('prm')
+
+        if(perms.includes(perm))
+            return true as R
+
+        if(!useHeirarchy)
+            return false as R
+
+        return this.getEffectivePermissions().includes(perm) as R
+    }
+
+    public hasLocation<R = ForAccessToken<T, boolean>>(location: ApiDataTypes.Objects.Location['Id']): R
+    {
+        if(!this.isOfType<TokenType.Access>('access'))
+            throw new Error('The method "hasLocation" can only be used on access tokens')
+
+        return this.getPayloadField('loc').includes(location) as R
+    }
+
+    public isLeaderOf<R = ForAccessToken<T, boolean>>(location: ApiDataTypes.Objects.Location['Id']): R
+    {
+        if(!this.isOfType<TokenType.Access>('access'))
+            throw new Error('The method "isLeaderOf" can only be used on access tokens')
+
+        return this.getPayloadField('llo').includes(location) as R
     }
 }

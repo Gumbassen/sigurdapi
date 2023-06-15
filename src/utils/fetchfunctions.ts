@@ -1,4 +1,5 @@
 import { sql, unsafe, escape } from './database'
+import filteriterator from './helpers/filteriterator'
 
 export class SQLNoResultError extends Error
 {
@@ -378,11 +379,14 @@ export async function fetchUsers(companyId: number, options?: FetchUsersOption[]
             UNIX_TIMESTAMP(u.HiredDate)  AS HiredDate,
             UNIX_TIMESTAMP(u.FiredDate)  AS FiredDate,
             GROUP_CONCAT(xul.LocationId) AS LocationIds,
-            GROUP_CONCAT(tetc.Id)        AS TimeTagCollectionIds
+            GROUP_CONCAT(tetc.Id)        AS TimeTagCollectionIds,
+            GROUP_CONCAT(xll.LocationId) AS LeaderOfIds
         FROM
             users AS u
         LEFT JOIN x_user_locations AS xul ON
             xul.UserId = u.Id
+        LEFT JOIN x_location_leaders AS xll ON
+            xll.UserId = u.Id
         LEFT JOIN time_entry_type_collections AS tetc ON
             tetc.CompanyId = u.CompanyId
             AND tetc.UserId = u.Id
@@ -408,6 +412,7 @@ export async function fetchUsers(companyId: number, options?: FetchUsersOption[]
             FiredDate:            row.FiredDate ?? undefined,
             LocationIds:          csNumberRow(row.LocationIds ?? ''),
             TimeTagCollectionIds: csNumberRow(row.TimeTagCollectionIds ?? ''),
+            LeaderOfIds:          csNumberRow(row.LeaderOfIds ?? ''),
         })
     }
 
@@ -430,11 +435,14 @@ export async function fetchUser(companyId: number, field: 'Id', value: number, t
             IF(u.HiredDate IS NULL, NULL, UNIX_TIMESTAMP(u.HiredDate)) AS HiredDate,
             IF(u.FiredDate IS NULL, NULL, UNIX_TIMESTAMP(u.FiredDate)) AS FiredDate,
             GROUP_CONCAT(xul.LocationId)                               AS LocationIds,
-            GROUP_CONCAT(tetc.Id)                                      AS TimeTagCollectionIds
+            GROUP_CONCAT(tetc.Id)                                      AS TimeTagCollectionIds,
+            GROUP_CONCAT(xll.LocationId)                               AS LeaderOfIds
         FROM
             users AS u
         LEFT JOIN x_user_locations AS xul ON
             xul.UserId = u.Id
+        LEFT JOIN x_location_leaders AS xll ON
+            xll.UserId = u.Id
         LEFT JOIN time_entry_type_collections AS tetc ON
             tetc.CompanyId = u.CompanyId
             AND tetc.UserId = u.Id
@@ -465,6 +473,7 @@ export async function fetchUser(companyId: number, field: 'Id', value: number, t
         FiredDate:            result[0].FiredDate ?? undefined,
         LocationIds:          csNumberRow(result[0].LocationIds ?? ''),
         TimeTagCollectionIds: csNumberRow(result[0].TimeTagCollectionIds ?? ''),
+        LeaderOfIds:          csNumberRow(result[0].LeaderOfIds ?? ''),
     }
 }
 
@@ -472,9 +481,9 @@ export async function fetchUserLocations(companyId: number, userIds: number[]): 
 {
     const results = await sql`
         SELECT
-            l.Id AS Id,
-            l.Name AS Name,
-            l.Description AS Description,
+            l.Id                     AS Id,
+            l.Name                   AS Name,
+            l.Description            AS Description,
             GROUP_CONCAT(xll.UserId) AS LeaderIds
         FROM
             locations AS l
@@ -802,11 +811,14 @@ export async function fetchFullUser(companyId: number, userId: number): Promise<
             IF(u.HiredDate IS NULL, NULL, UNIX_TIMESTAMP(u.HiredDate)) AS HiredDate,
             IF(u.FiredDate IS NULL, NULL, UNIX_TIMESTAMP(u.FiredDate)) AS FiredDate,
             GROUP_CONCAT(xul.LocationId) AS LocationIds,
-            GROUP_CONCAT(tetc.Id)        AS TimeTagCollectionIds
+            GROUP_CONCAT(tetc.Id)        AS TimeTagCollectionIds,
+            GROUP_CONCAT(xll.LocationId) AS LeaderOfIds
         FROM
             users AS u
         LEFT JOIN x_user_locations AS xul ON
             xul.UserId = u.Id
+        LEFT JOIN x_location_leaders AS xll ON
+            xll.UserId = u.Id
         LEFT JOIN time_entry_type_collections AS tetc ON
             tetc.CompanyId = u.CompanyId
             AND tetc.UserId = u.Id
@@ -822,6 +834,9 @@ export async function fetchFullUser(companyId: number, userId: number): Promise<
 
     const locationIds          = csNumberRow(result[0].LocationIds ?? '')
     const timeTagCollectionIds = csNumberRow(result[0].TimeTagCollectionIds ?? '')
+    const leaderOfIds          = csNumberRow(result[0].LeaderOfIds ?? '')
+
+    const locations = await fetchLocations(companyId, 'Id', locationIds.concat(leaderOfIds).unique())
 
     return {
         Id:                   userId,
@@ -835,11 +850,13 @@ export async function fetchFullUser(companyId: number, userId: number): Promise<
         HiredDate:            result[0].HiredDate ?? undefined,
         FiredDate:            result[0].FiredDate ?? undefined,
         LocationIds:          locationIds,
-        Locations:            Array.from((await fetchLocations(companyId, 'Id', locationIds)).values()),
+        Locations:            Array.from(filteriterator(locations.values(), l => locationIds.includes(l.Id))),
         Company:              await fetchCompany(companyId),
         UserRole:             await fetchUserRole(companyId, result[0].UserRoleId),
         TimeTagCollectionIds: timeTagCollectionIds,
         TimeTagCollections:   Array.from((await fetchTimeEntryTypeCollections(companyId, 'Id', timeTagCollectionIds)).values()),
+        LeaderOfIds:          leaderOfIds,
+        LeaderOf:             Array.from(filteriterator(locations.values(), l => leaderOfIds.includes(l.Id))),
     }
 }
 

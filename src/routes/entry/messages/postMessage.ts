@@ -1,11 +1,14 @@
 import express, { Request, Response } from 'express'
 import log from '../../../utils/Logger'
-import { error, wsbroadcast } from '../../../utils/common'
-import { escape, sql, sqlMulti, unsafe } from '../../../utils/database'
+import { error, notAllowed, wsbroadcast } from '../../../utils/common'
+import { sqlMulti } from '../../../utils/database'
+import permission from '../../../middlewares/permission'
+import { EUserRolePermission as URP } from '../../../enums/userpermissions'
+import { fetchTimeEntry } from '../../../utils/fetchfunctions'
 
 export default function(router: express.Router)
 {
-    router.post('/:entryId/messages', async (req: Request, res: Response) =>
+    router.post('/:entryId/messages', permission.oneOf(URP.comment_own_entries, URP.manage_location_entries), async (req: Request, res: Response) =>
     {
         const token     = res.locals.accessToken!
         const companyId = token.getPayloadField('cid')
@@ -45,31 +48,18 @@ export default function(router: express.Router)
             }
         }
 
-        const permissionChecks = new Map<string, string>()
-        if(messageObj.TimeEntryId)
+        const entry = await fetchTimeEntry(companyId, entryId, false)
+        if(!entry) return error(res, 400, 'URL param "TimeEntryId" is invalid.')
+
+        if(!token.hasPermission(URP.manage_location_entries))
         {
-            permissionChecks.set('TimeEntryId', /*SQL*/`(
-                ${escape(messageObj.TimeEntryId)} IN (
-                    SELECT
-                        Id
-                    FROM
-                        timeentries
-                    WHERE
-                        CompanyId = ${escape(messageObj.CompanyId)}
-                        AND Id    = ${escape(messageObj.TimeEntryId)})
-                ) AS TimeEntryId `
-            )
+            if(entry.UserId !== token.getPayloadField('uid'))
+                return notAllowed(res)
         }
-
-        if(permissionChecks.size)
+        else
         {
-            const result = await sql`SELECT ${unsafe(Array.from(permissionChecks.values()).join(','))}`
-
-            for(const prop of permissionChecks.keys())
-            {
-                if(result[0][prop] !== 1)
-                    return error(res, 400, `Param "${prop}" is invalid.`)
-            }
+            if(!token.isLeaderOf(entry.LocationId))
+                return notAllowed(res)
         }
 
         try

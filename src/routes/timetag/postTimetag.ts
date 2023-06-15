@@ -4,13 +4,15 @@ import { ONE_DAY_SECONDS } from '../../utils/helpers/timedefinitions'
 import { ETimetagWeekday } from '../../enums/timetagweekdays'
 import { escape, sql, unsafe } from '../../utils/database'
 import { fetchFullTimetag } from '../../utils/fetchfunctions'
+import permission from '../../middlewares/permission'
+import { EUserRolePermission as URP } from '../../enums/userpermissions'
 
 type ApiTimetag     = ApiDataTypes.Objects.Timetag
 type ApiTimetagRule = ApiDataTypes.Objects.TimetagRule
 
 export default function(router: Router)
 {
-    router.post('/', async (req: Request, res: Response) =>
+    router.post('/', permission.has(URP.manage_all_timetags), async (req: Request, res: Response) =>
     {
         const token     = res.locals.accessToken!
         const companyId = token.getPayloadField('cid')

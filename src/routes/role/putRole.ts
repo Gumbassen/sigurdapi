@@ -4,12 +4,14 @@ import { SQLNoResultError, fetchUserRole } from '../../utils/fetchfunctions'
 import log from '../../utils/Logger'
 import isValidKeyOf from '../../utils/helpers/isvalidkeyof'
 import { escape, sql, unsafe } from '../../utils/database'
+import permission from '../../middlewares/permission'
+import { EUserRolePermission as URP } from '../../enums/userpermissions'
 
 type ApiUserRole = ApiDataTypes.Objects.UserRole
 
 export default function(router: Router)
 {
-    router.put('/:roleId', async (req: Request, res: Response) =>
+    router.put('/:roleId', permission.has(URP.manage_all_roles), async (req: Request, res: Response) =>
     {
         const token     = res.locals.accessToken!
         const roleId    = Number.parseInt(req.params.roleId)

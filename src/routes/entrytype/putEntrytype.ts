@@ -4,12 +4,14 @@ import { fetchTimeEntryType } from '../../utils/fetchfunctions'
 import isValidKeyOf from '../../utils/helpers/isvalidkeyof'
 import { escape, sql, unsafe } from '../../utils/database'
 import log from '../../utils/Logger'
+import permission from '../../middlewares/permission'
+import { EUserRolePermission as URP } from '../../enums/userpermissions'
 
 type ApiTimeEntryType = ApiDataTypes.Objects.TimeEntryType
 
 export default function(router: Router)
 {
-    router.put('/:typeId', async (req: Request, res: Response) =>
+    router.put('/:typeId', permission.has(URP.manage_all_timetags), async (req: Request, res: Response) =>
     {
         const token     = res.locals.accessToken!
         const companyId = token.getPayloadField('cid')

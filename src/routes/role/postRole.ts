@@ -2,12 +2,14 @@ import { Router, Request, Response } from 'express'
 import { error, wsbroadcast } from '../../utils/common'
 import { escape, sql, unsafe } from '../../utils/database'
 import log from '../../utils/Logger'
+import permission from '../../middlewares/permission'
+import { EUserRolePermission as URP } from '../../enums/userpermissions'
 
 type ApiUserRole = ApiDataTypes.Objects.UserRole
 
 export default function(router: Router)
 {
-    router.post('/', async (req: Request, res: Response) =>
+    router.post('/', permission.has(URP.manage_all_roles), async (req: Request, res: Response) =>
     {
         const requiredProps: (keyof ApiUserRole)[] = [
             'Name',

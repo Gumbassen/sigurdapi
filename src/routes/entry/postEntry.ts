@@ -1,13 +1,15 @@
 import { Request, Response, Router } from 'express'
-import { error, wsbroadcast } from '../../utils/common'
+import { error, notAllowed, wsbroadcast } from '../../utils/common'
 import { escape, sql, unsafe } from '../../utils/database'
 import log from '../../utils/Logger'
+import permission from '../../middlewares/permission'
+import { EUserRolePermission as URP } from '../../enums/userpermissions'
 
 type ApiTimeEntry = ApiDataTypes.Objects.TimeEntry
 
 export default function(router: Router)
 {
-    router.post('/', async (req: Request, res: Response) =>
+    router.post('/', permission.oneOf(URP.create_own_entries, URP.manage_location_entries), async (req: Request, res: Response) =>
     {
         const token     = res.locals.accessToken!
         const companyId = token.getPayloadField('cid')
@@ -118,6 +120,19 @@ export default function(router: Router)
                 if(result[0][prop] !== 1)
                     return error(res, 400, `Param "${prop}" is invalid.`)
             }
+        }
+
+        if(!token.hasPermission(URP.manage_location_entries))
+        {
+            if(entry.UserId !== token.getPayloadField('uid'))
+                return notAllowed(res)
+
+            if(!token.hasLocation(entry.LocationId))
+                return notAllowed(res)
+        }
+        else if(!token.isLeaderOf(entry.LocationId))
+        {
+            return notAllowed(res)
         }
 
 

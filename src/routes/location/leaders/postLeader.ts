@@ -2,10 +2,12 @@ import { Router, Request, Response } from 'express'
 import { error } from '../../../utils/common'
 import { fetchLocation, fetchUser } from '../../../utils/fetchfunctions'
 import { sql } from '../../../utils/database'
+import permission from '../../../middlewares/permission'
+import { EUserRolePermission as URP } from '../../../enums/userpermissions'
 
 export default function(router: Router)
 {
-    router.post('/:locationId/leaders/:leaderId', async (req: Request, res: Response) =>
+    router.post('/:locationId/leaders/:leaderId', permission.has(URP.manage_all_leaders), async (req: Request, res: Response) =>
     {
         const token      = res.locals.accessToken!
         const companyId  = token.getPayloadField('cid')

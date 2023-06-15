@@ -4,12 +4,14 @@ import { fetchLocation } from '../../utils/fetchfunctions'
 import isValidKeyOf from '../../utils/helpers/isvalidkeyof'
 import { escape, sql, unsafe } from '../../utils/database'
 import log from '../../utils/Logger'
+import permission from '../../middlewares/permission'
+import { EUserRolePermission as URP } from '../../enums/userpermissions'
 
 type ApiLocation = ApiDataTypes.Objects.Location
 
 export default function(router: Router)
 {
-    router.put('/:locationId', async (req: Request, res: Response) =>
+    router.put('/:locationId', permission.has(URP.manage_all_locations), async (req: Request, res: Response) =>
     {
         const token      = res.locals.accessToken!
         const companyId  = token.getPayloadField('cid')

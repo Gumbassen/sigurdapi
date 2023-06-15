@@ -2,10 +2,12 @@ import { Router, Request, Response } from 'express'
 import { error, wsbroadcast } from '../../utils/common'
 import { fetchTimeEntryType } from '../../utils/fetchfunctions'
 import { sql } from '../../utils/database'
+import { EUserRolePermission as URP } from '../../enums/userpermissions'
+import permission from '../../middlewares/permission'
 
 export default function(router: Router)
 {
-    router.delete('/:typeId', async (req: Request, res: Response) =>
+    router.delete('/:typeId', permission.has(URP.manage_all_timetags), async (req: Request, res: Response) =>
     {
         const token     = res.locals.accessToken!
         const companyId = token.getPayloadField('cid')

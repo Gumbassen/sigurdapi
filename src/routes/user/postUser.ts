@@ -1,13 +1,15 @@
 import { Router, Request, Response } from 'express'
-import { error, wsbroadcast } from '../../utils/common'
+import { error, notAllowed, wsbroadcast } from '../../utils/common'
 import { escape, nullableEpoch, sql, unsafe } from '../../utils/database'
 import log from '../../utils/Logger'
+import permission from '../../middlewares/permission'
+import { EUserRolePermission as URP } from '../../enums/userpermissions'
 
 type ApiUser = ApiDataTypes.Objects.User
 
 export default function(router: Router)
 {
-    router.post('/', async (req: Request, res: Response) =>
+    router.post('/', permission.oneOf(URP.manage_all_users, URP.manage_location_users), async (req: Request, res: Response) =>
     {
         const token     = res.locals.accessToken!
         const companyId = token.getPayloadField('cid')
@@ -128,6 +130,15 @@ export default function(router: Router)
                 if(result[0][prop] !== 1)
                     return error(res, 400, `Param "${prop}" is invalid.`)
             }
+        }
+
+        if(!token.hasPermission(URP.manage_all_users))
+        {
+            const tokenUserLeaderOf = token.getPayloadField('llo')
+
+            // Cannot add locations that you do not have leadership of
+            if(userObj.LocationIds.difference(tokenUserLeaderOf).length)
+                return notAllowed(res)
         }
 
         userObj.FullName = [ userObj.FirstName, ...userObj.MiddleName ? [userObj.MiddleName] : [], userObj.SurName ].join(' ')

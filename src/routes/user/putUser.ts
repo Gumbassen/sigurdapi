@@ -1,15 +1,17 @@
 import { Router, Request, Response } from 'express'
-import { error, wsbroadcast } from '../../utils/common'
+import { error, notAllowed, wsbroadcast } from '../../utils/common'
 import { SQLNoResultError, fetchUser } from '../../utils/fetchfunctions'
 import log from '../../utils/Logger'
 import isValidKeyOf from '../../utils/helpers/isvalidkeyof'
 import { escape, sql, unsafe } from '../../utils/database'
+import permission from '../../middlewares/permission'
+import { EUserRolePermission as URP } from '../../enums/userpermissions'
 
 type ApiUser = ApiDataTypes.Objects.User
 
 export default function(router: Router)
 {
-    router.put('/:userId', async (req: Request, res: Response) =>
+    router.put('/:userId', permission.oneOf(URP.manage_all_users, URP.manage_location_users), async (req: Request, res: Response) =>
     {
         const token     = res.locals.accessToken!
         const userId    = Number.parseInt(req.params.userId)
@@ -222,6 +224,30 @@ export default function(router: Router)
                     locationsToRemove.push(...user.LocationIds.filter(id => !updatedUser.LocationIds!.includes(id)))
                     break
             }
+        }
+
+
+        if(!token.hasPermission(URP.manage_location_users))
+        {
+            const tokenUserLeaderOf = token.getPayloadField('llo')
+
+            // Cannot change users that are not part of the locations you have leadership of
+            if(!tokenUserLeaderOf.intersect(user.LocationIds).length)
+                return notAllowed(res)
+
+            // Cannot change users who shares leadership over locations you also have leadership of
+            if(tokenUserLeaderOf.intersect(user.LeaderOfIds).length)
+                return notAllowed(res)
+
+            // TODO: Can this use be changed if he is a leader of another location?
+
+            // Cannot add locations that you do not have leadership of
+            if(locationsToAdd.difference(tokenUserLeaderOf).length)
+                return notAllowed(res)
+
+            // Cannot remove locations that you do not have leadership of
+            if(locationsToRemove.difference(tokenUserLeaderOf).length)
+                return notAllowed(res)
         }
 
 

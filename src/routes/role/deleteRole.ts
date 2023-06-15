@@ -3,10 +3,12 @@ import { error, wsbroadcast } from '../../utils/common'
 import { fetchUserRoles } from '../../utils/fetchfunctions'
 import { sql } from '../../utils/database'
 import log from '../../utils/Logger'
+import permission from '../../middlewares/permission'
+import { EUserRolePermission as URP } from '../../enums/userpermissions'
 
 export default function(router: Router)
 {
-    router.delete('/:roleId', async (req: Request, res: Response) =>
+    router.delete('/:roleId', permission.has(URP.manage_all_roles), async (req: Request, res: Response) =>
     {
         const token     = res.locals.accessToken!
         const companyId = token.getPayloadField('cid')

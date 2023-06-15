@@ -1,3 +1,4 @@
+/* eslint-disable no-use-before-define */
 
 declare namespace ApiDataTypes {
     declare namespace Objects {
@@ -9,39 +10,40 @@ declare namespace ApiDataTypes {
 
         interface TimeEntry {
             Id:               number
-            CompanyId:        number
-            UserId?:          number
+            CompanyId:        Company['Id']
+            UserId?:          User['Id']
             Start:            number
             End:              number
             Duration:         number
             GroupingId?:      number
-            MessageIds:       number[]
-            LocationId:       number
-            TimeEntryTypeId?: number
+            MessageIds:       TimeEntryMessage['Id'][]
+            LocationId:       Location['Id']
+            TimeEntryTypeId?: TimeEntryType['Id']
         }
 
         interface TimeEntryMessage {
             Id:          number
-            CompanyId:   number
-            UserId:      number
-            TimeEntryId: number
+            CompanyId:   Company['Id']
+            UserId:      User['Id']
+            TimeEntryId: TimeEntry['Id']
             CreatedAt:   number
             Message:     string
         }
 
         interface User {
             Id:                   number
-            CompanyId:            number
-            UserRoleId:           number
+            CompanyId:            Company['Id']
+            UserRoleId:           UserRole['Id']
             FullName:             string
             FirstName:            string
             MiddleName?:          string
             SurName:              string
             ProfileImage?:        number
-            TimeTagCollectionIds: number[]
+            TimeTagCollectionIds: TimeEntryTypeCollection['Id'][]
             HiredDate?:           number
             FiredDate?:           number
-            LocationIds:          number[]
+            LocationIds:          Location['Id'][]
+            LeaderOfIds:          Location['Id'][]
         }
 
         interface Company {
@@ -51,25 +53,25 @@ declare namespace ApiDataTypes {
 
         interface UserRole {
             Id:            number
-            CompanyId:     number
+            CompanyId:     Company['Id']
             Name:          string
             Description?:  string
-            PermissionIds: number[]
+            PermissionIds: UserRolePermission['Id'][]
         }
 
         interface Timetag {
             Id:          number
-            CompanyId:   number
+            CompanyId:   Company['Id']
             Name:        string
             BasisAmount: number
             BasisType:   string
-            RuleIds:     number[]
+            RuleIds:     TimetagRule['Id'][]
         }
 
         interface TimetagRule {
             Id:        number
-            CompanyId: number
-            TimeTagId: number
+            CompanyId: Company['Id']
+            TimeTagId: Timetag['Id']
             Name:      string
             Type:      string
             /** Counted in seconds passed since midnight */
@@ -86,10 +88,10 @@ declare namespace ApiDataTypes {
 
         interface TimeEntryTypeCollection {
             Id:              number
-            CompanyId:       number
-            UserId:          number
-            TimeEntryTypeId: number
-            TimeTagIds:      number[]
+            CompanyId:       Company['Id']
+            UserId:          User['Id']
+            TimeEntryTypeId: TimeEntryType['Id']
+            TimeTagIds:      Timetag['Id'][]
         }
 
         interface FullTimeEntryTypeCollection extends TimeEntryTypeCollection{
@@ -98,10 +100,10 @@ declare namespace ApiDataTypes {
 
         interface Location {
             Id:           number
-            CompanyId:    number
+            CompanyId:    Company['Id']
             Name:         string
             Description?: string
-            LeaderIds:    number[]
+            LeaderIds:    User['Id'][]
         }
 
         interface FullUser extends User {
@@ -109,6 +111,7 @@ declare namespace ApiDataTypes {
             UserRole:           UserRole
             TimeTagCollections: TimeEntryTypeCollection[]
             Locations:          Location[]
+            LeaderOf:           Location[]
         }
 
         interface UserRolePermission {
@@ -123,29 +126,33 @@ declare namespace ApiDataTypes {
 
         interface FetchedTimeEntryMessage extends TimeEntryMessage {
             User: Partial<User> & {
-                UserRoleId:           number
+                UserRoleId:           UserRole['Id']
                 FullName:             string
                 ProfileImage?:        number
             }
         }
 
-        type FetchedTimeEntry = TimeEntry & ({
-            WithLocation: true
-            Location:     Location
-        } | {
-            WithLocation: false
-            Location:     undefined
-        }) & ({
-            WithMessages: true
-            Messages:     FetchedTimeEntryMessage[]
-        } | {
-            WithMessages: false
-            Messages:     undefined
-        })
+        type FetchedTimeEntry = TimeEntry & (
+            {
+                WithLocation: true
+                Location:     Location
+            } | {
+                WithLocation: false
+                Location:     undefined
+            }
+        ) & (
+            {
+                WithMessages: true
+                Messages:     FetchedTimeEntryMessage[]
+            } | {
+                WithMessages: false
+                Messages:     undefined
+            }
+        )
 
         interface TimeEntryType {
             Id:        number
-            CompanyId: number
+            CompanyId: Company['Id']
             Name:      string
         }
     }

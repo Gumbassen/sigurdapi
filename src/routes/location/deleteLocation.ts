@@ -2,10 +2,12 @@ import { Router, Request, Response } from 'express'
 import { error, wsbroadcast } from '../../utils/common'
 import { fetchLocation } from '../../utils/fetchfunctions'
 import { sql } from '../../utils/database'
+import permission from '../../middlewares/permission'
+import { EUserRolePermission as URP } from '../../enums/userpermissions'
 
 export default function(router: Router)
 {
-    router.delete('/:locationId', async (req: Request, res: Response) =>
+    router.delete('/:locationId', permission.has(URP.manage_all_locations), async (req: Request, res: Response) =>
     {
         const token      = res.locals.accessToken!
         const companyId  = token.getPayloadField('cid')

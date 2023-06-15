@@ -1,15 +1,17 @@
 import { Router, Request, Response } from 'express'
 import log from '../../utils/Logger'
-import { error, wsbroadcast } from '../../utils/common'
+import { error, notAllowed, wsbroadcast } from '../../utils/common'
 import { fetchTimeEntry } from '../../utils/fetchfunctions'
 import isValidKeyOf from '../../utils/helpers/isvalidkeyof'
 import { escape, sql, unsafe } from '../../utils/database'
+import permission from '../../middlewares/permission'
+import { EUserRolePermission as URP } from '../../enums/userpermissions'
 
 type ApiTimeEntry = ApiDataTypes.Objects.TimeEntry
 
 export default function(router: Router)
 {
-    router.put('/:entryId', async (req: Request, res: Response) =>
+    router.put('/:entryId', permission.oneOf(URP.create_own_entries, URP.manage_location_entries), async (req: Request, res: Response) =>
     {
         const token     = res.locals.accessToken!
         const companyId = token.getPayloadField('cid')
@@ -148,6 +150,21 @@ export default function(router: Router)
                 if(result[0][prop] !== 1)
                     return error(res, 400, `Param "${prop}" is invalid.`)
             }
+        }
+
+        if(!token.hasPermission(URP.manage_location_entries))
+        {
+            const tokenUserId = token.getPayloadField('uid')
+
+            if(entry.UserId !== tokenUserId || updatedEntry.UserId && updatedEntry.UserId !== tokenUserId)
+                return notAllowed(res)
+
+            if(!token.hasLocation(entry.LocationId) || updatedEntry.LocationId && !token.hasLocation(updatedEntry.LocationId))
+                return notAllowed(res)
+        }
+        else if(!token.isLeaderOf(entry.LocationId) || updatedEntry.LocationId && !token.isLeaderOf(updatedEntry.LocationId))
+        {
+            return notAllowed(res)
         }
 
         const updateSet: string[] = []

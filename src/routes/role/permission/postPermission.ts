@@ -2,10 +2,12 @@ import { Router, Request, Response } from 'express'
 import { error } from '../../../utils/common'
 import { sql, sqlMulti } from '../../../utils/database'
 import { SQLNoResultError } from '../../../utils/fetchfunctions'
+import permission from '../../../middlewares/permission'
+import { EUserRolePermission as URP } from '../../../enums/userpermissions'
 
 export default function(router: Router)
 {
-    router.post('/:roleId/permission/:permissionId', async (req: Request, res: Response) =>
+    router.post('/:roleId/permission/:permissionId', permission.has(URP.manage_all_roles), async (req: Request, res: Response) =>
     {
         const token        = res.locals.accessToken!
         const companyId    = token.getPayloadField('cid')

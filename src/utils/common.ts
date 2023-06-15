@@ -30,6 +30,11 @@ export function error(response: Response, status: number, message: string, code?
     response.status(status).send(data)
 }
 
+export function notAllowed(response: Response, code?: number): void
+{
+    error(response, 403, 'You do not have permission to operate on this resource.', code)
+}
+
 /**
  * @param companyId The company ID that this message is broadcasted to.
  * @param action    How the "model" has changed.

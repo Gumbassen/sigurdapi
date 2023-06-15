@@ -4,12 +4,14 @@ import { SQLNoResultError, fetchFullTimetag } from '../../utils/fetchfunctions'
 import log from '../../utils/Logger'
 import isValidKeyOf from '../../utils/helpers/isvalidkeyof'
 import { escape, sql, unsafe } from '../../utils/database'
+import permission from '../../middlewares/permission'
+import { EUserRolePermission as URP } from '../../enums/userpermissions'
 
 type ApiTimetag = ApiDataTypes.Objects.Timetag
 
 export default function(router: Router)
 {
-    router.put('/:timeTagId', async (req: Request, res: Response) =>
+    router.put('/:timeTagId', permission.has(URP.manage_all_timetags), async (req: Request, res: Response) =>
     {
         const token     = res.locals.accessToken!
         const companyId = token.getPayloadField('cid')
