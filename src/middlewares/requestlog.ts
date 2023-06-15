@@ -8,7 +8,10 @@ export default function(): RequestHandler
         if(request.url.startsWith('/swagger'))
             return next()
 
-        log.http(`${request.socket.remoteAddress} -> [${request.method}] ${request.url}\nBody: `, request.body)
+        if(Object.keys(request.body).length)
+            log.http(`${request.socket.remoteAddress} -> [${request.method}] ${request.url}\nBody: `, request.body)
+        else
+            log.http(`${request.socket.remoteAddress} -> [${request.method}] ${request.url}`)
         next()
     }
 }
