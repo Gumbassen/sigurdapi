@@ -20,17 +20,20 @@ export default function(router: Router)
         const entry = await fetchTimeEntry(companyId, entryId, false)
         if(!entry) return error(res, 404, 'Time entry not found')
 
-        if(!token.hasPermission(URP.manage_location_entries))
+        if(!token.isSuperadmin())
         {
-            if(entry.UserId !== token.getPayloadField('uid'))
+            if(!token.hasPermission(URP.manage_location_entries))
+            {
+                if(entry.UserId !== token.getPayloadField('uid'))
+                    return notAllowed(res)
+    
+                if(token.hasLocation(entry.LocationId))
+                    return notAllowed(res)
+            }
+            else if(!token.isLeaderOf(entry.LocationId))
+            {
                 return notAllowed(res)
-
-            if(token.hasLocation(entry.LocationId))
-                return notAllowed(res)
-        }
-        else if(!token.isLeaderOf(entry.LocationId))
-        {
-            return notAllowed(res)
+            }
         }
 
         const result = await sql`

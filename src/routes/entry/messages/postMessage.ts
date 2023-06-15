@@ -51,15 +51,18 @@ export default function(router: express.Router)
         const entry = await fetchTimeEntry(companyId, entryId, false)
         if(!entry) return error(res, 400, 'URL param "TimeEntryId" is invalid.')
 
-        if(!token.hasPermission(URP.manage_location_entries))
+        if(!token.isSuperadmin())
         {
-            if(entry.UserId !== token.getPayloadField('uid'))
-                return notAllowed(res)
-        }
-        else
-        {
-            if(!token.isLeaderOf(entry.LocationId))
-                return notAllowed(res)
+            if(!token.hasPermission(URP.manage_location_entries))
+            {
+                if(entry.UserId !== token.getPayloadField('uid'))
+                    return notAllowed(res)
+            }
+            else
+            {
+                if(!token.isLeaderOf(entry.LocationId))
+                    return notAllowed(res)
+            }
         }
 
         try

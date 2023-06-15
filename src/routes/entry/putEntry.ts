@@ -160,19 +160,22 @@ export default function(router: Router)
             }
         }
 
-        if(!token.hasPermission(URP.manage_location_entries))
+        if(!token.isSuperadmin())
         {
-            const tokenUserId = token.getPayloadField('uid')
+            if(!token.hasPermission(URP.manage_location_entries))
+            {
+                const tokenUserId = token.getPayloadField('uid')
 
-            if(entry.UserId !== tokenUserId || updatedEntry.UserId && updatedEntry.UserId !== tokenUserId)
-                return notAllowed(res)
+                if(entry.UserId !== tokenUserId || updatedEntry.UserId && updatedEntry.UserId !== tokenUserId)
+                    return notAllowed(res)
 
-            if(!token.hasLocation(entry.LocationId) || updatedEntry.LocationId && !token.hasLocation(updatedEntry.LocationId))
+                if(!token.hasLocation(entry.LocationId) || updatedEntry.LocationId && !token.hasLocation(updatedEntry.LocationId))
+                    return notAllowed(res)
+            }
+            else if(!token.isLeaderOf(entry.LocationId) || updatedEntry.LocationId && !token.isLeaderOf(updatedEntry.LocationId))
+            {
                 return notAllowed(res)
-        }
-        else if(!token.isLeaderOf(entry.LocationId) || updatedEntry.LocationId && !token.isLeaderOf(updatedEntry.LocationId))
-        {
-            return notAllowed(res)
+            }
         }
 
         const updateSet: string[] = []

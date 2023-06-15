@@ -128,17 +128,20 @@ export default function(router: Router)
             }
         }
 
-        if(!token.hasPermission(URP.manage_location_entries))
+        if(!token.isSuperadmin())
         {
-            if(entry.UserId !== token.getPayloadField('uid'))
+            if(!token.hasPermission(URP.manage_location_entries))
+            {
+                if(entry.UserId !== token.getPayloadField('uid'))
+                    return notAllowed(res)
+    
+                if(!token.hasLocation(entry.LocationId))
+                    return notAllowed(res)
+            }
+            else if(!token.isLeaderOf(entry.LocationId))
+            {
                 return notAllowed(res)
-
-            if(!token.hasLocation(entry.LocationId))
-                return notAllowed(res)
-        }
-        else if(!token.isLeaderOf(entry.LocationId))
-        {
-            return notAllowed(res)
+            }
         }
 
 
