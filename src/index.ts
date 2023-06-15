@@ -192,13 +192,16 @@ async function main()
     app.use(authmw({
         insecureFilter: request =>
         {
-            if([ '/auth/authenticate', '/auth/refresh' ].includes(request.url))
+            if([ '/', '/favicon.ico', '/auth/authenticate', '/auth/refresh' ].includes(request.url))
                 return true
     
             if(request.url.startsWith('/swagger'))
                 return true
     
             if(request.url.startsWith('/static'))
+                return true
+
+            if(request.url.startsWith('/html'))
                 return true
     
             return false
@@ -210,6 +213,12 @@ async function main()
 
     // Swagger routes
     app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerDefinitions))
+
+    // Default landing page
+    app.get('/', (req, res) => res.setHeader('Location', '/html').sendStatus(302))
+    app.get('/html', (req, res) => res.setHeader('Location', '/html/index.html').sendStatus(302))
+    app.get('/favicon.ico', (req, res) => res.sendStatus(404))
+    app.use('/html', express.static('./../html'))
 
 
     await startServer(app, port).catch(errors =>
