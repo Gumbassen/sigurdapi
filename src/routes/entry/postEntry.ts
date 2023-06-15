@@ -155,7 +155,7 @@ export default function(router: Router)
                     Duration        = ${entry.Duration},
                     GroupingId      = ${entry.GroupingId ?? null},
                     LocationId      = ${entry.LocationId},
-                    TimeEntryTypeId = ${entry.TimeEntryTypeId ?? null}
+                    TimeEntryTypeId = ${entry.TimeEntryTypeId ?? null},
                     Status          = ${entry.Status ?? null}`
             entry.Id = result.insertId
 
