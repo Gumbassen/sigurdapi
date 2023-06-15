@@ -7,6 +7,7 @@
     "build": "npx tsc",
     "watch": "npx tsc --watch",
     "start": "node --enable-source-maps dist/index.js",
+    "startmon": "nodemon --enable-source-maps dist/index.js",
     "dev": "concurrently \"npx tsc --watch\" \"nodemon --enable-source-maps -q dist/index.js\""
   },
   "author": "",
