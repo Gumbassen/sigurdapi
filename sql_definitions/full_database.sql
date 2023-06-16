@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 14, 2023 at 12:40 PM
+-- Generation Time: Jun 16, 2023 at 02:04 PM
 -- Server version: 10.4.10-MariaDB
 -- PHP Version: 7.4.33
 
@@ -63,7 +63,8 @@ CREATE TABLE `timeentries` (
   `Duration` int(11) NOT NULL,
   `GroupingId` int(11) DEFAULT NULL,
   `LocationId` int(11) NOT NULL,
-  `TimeEntryTypeId` int(11) DEFAULT NULL
+  `TimeEntryTypeId` int(11) DEFAULT NULL,
+  `Status` varchar(255) NOT NULL DEFAULT 'Standard'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
