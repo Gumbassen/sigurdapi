@@ -2,6 +2,7 @@
 
 // Environment setup
 import './utils/Extensions'
+import net from 'net'
 import express from 'express'
 import dotenv from 'dotenv'
 import fs from 'fs'
@@ -51,7 +52,7 @@ process.on('SIGINT', () =>
 })
 process.on('exit', () => log.warn('Exiting...'))
 
-async function handlePidLock()
+async function handlePidLock(): Promise<void>
 {
     const log = getNamedLogger('PIDLOCK')
 
@@ -174,7 +175,42 @@ async function startServer(app: express.Application, port: number): Promise<void
     })
 }
 
-async function main()
+async function startPortProxy(): Promise<void>
+{
+    const log = getNamedLogger('PORTPROXY')
+
+    if(!('ADD_PORT' in process.env))
+    {
+        log.info('No additional port specified. Skipping.')
+        return
+    }
+
+    const sourcePort      = Number.parseInt(process.env.ADD_PORT!)
+    const destinationPort = Number.parseInt(process.env.PORT ?? '6969')
+    const destinationAddr = '127.0.0.1'
+
+    return new Promise(resolve =>
+    {
+        net.createServer(source =>
+        {
+            const destination = net.createConnection({
+                host: destinationAddr,
+                port: destinationPort,
+            })
+
+            source.pipe(destination)
+            destination.pipe(source)
+
+            log.silly(`Caught ${source.remoteAddress}:${source.remotePort} -> ${destinationAddr}:${destinationPort}`)
+        }).listen(sourcePort, () =>
+        {
+            log.info(`Listening on port ${sourcePort} -> ${destinationPort}`)
+            resolve()
+        })
+    })
+}
+
+async function main(): Promise<void>
 {
     const app  = express()
     const port = Number.parseInt(process.env.PORT ?? '6969')
@@ -231,4 +267,4 @@ async function main()
     app.use(notfound404())
 }
 
-handlePidLock().then(() => main())
+handlePidLock().then(() => main()).then(() => startPortProxy())
